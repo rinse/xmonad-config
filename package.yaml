@@ -21,14 +21,16 @@ description:         Please see the README on GitHub at <https://github.com/rins
 
 dependencies:
 - base >= 4.7 && < 5
+- xmonad >= 0.15
+- xmonad-contrib >= 0.15
 
 library:
-  source-dirs: src
+  source-dirs: lib
 
 executables:
-  xmonad-config-exe:
-    main:                Main.hs
-    source-dirs:         app
+  xmonad-config:
+    main:                xmonad.hs
+    source-dirs:         .
     ghc-options:
     - -threaded
     - -rtsopts
