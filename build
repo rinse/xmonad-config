@@ -1,0 +1,12 @@
+#!/usr/bin/env stack
+-- stack --resolver lts-14.16 runghc --package xmonad --package directory --package process
+
+import           System.Directory (setCurrentDirectory)
+import           System.Process   (callProcess)
+import           XMonad
+
+
+main :: IO ()
+main = do
+    getXMonadDir >>= setCurrentDirectory
+    callProcess "stack" [ "install" ]
