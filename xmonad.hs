@@ -3,7 +3,7 @@ module Main where
 {-
     This is xmonad.hs for me.
     You may need to install the following:
-      - dmenu, xmobar
+      - xmobar
     If you don't have, the following as well:
       - pactl
     Troubleshootings:
@@ -28,6 +28,9 @@ import           XMonad.Layout.Minimize      (minimize)
 import           XMonad.Layout.NoBorders     (noBorders)
 import           XMonad.Layout.ResizableTile (MirrorResize (MirrorExpand, MirrorShrink),
                                               ResizableTall (ResizableTall))
+import qualified XMonad.Prompt               as P (XPConfig (..),
+                                                   XPPosition (..))
+import qualified XMonad.Prompt.Shell         as P (shellPrompt)
 import qualified XMonad.StackSet             as W
 import           XMonad.Util.EZConfig        (additionalKeysP, removeKeysP)
 import           XMonad.Util.Run             (safeSpawnProg)
@@ -59,6 +62,7 @@ configKeys c = c `additionalKeysP` myAdditionalKeys `removeKeysP` myRemovedKeys
     myAdditionalKeys =
         [ ("M4-l", lock)
         , ("M1-C-t", safeSpawnProg myTerminal)
+        , ("M-p", P.shellPrompt myShellPrompt)
         , ("M-a", sendMessage MirrorShrink)
         , ("M-z", sendMessage MirrorExpand)
         , ("M-j", focusDown)
@@ -78,3 +82,10 @@ configKeys c = c `additionalKeysP` myAdditionalKeys `removeKeysP` myRemovedKeys
         [ "M-S-q"
         , "M1-<Return>" -- For intellij idea. Use M-i instead
         ]
+
+myShellPrompt :: P.XPConfig
+myShellPrompt = def
+    { P.font = "-misc-fixed-*-*-*-*-18-*-*-*-*-*-*-*"
+    , P.position = P.Top
+    , P.height = 20
+    }
