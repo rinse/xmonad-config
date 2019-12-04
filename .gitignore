@@ -2,4 +2,5 @@
 xmonad-config.cabal
 xmonad-config
 xmonad-*-*
+xmonad.errors
 *~
