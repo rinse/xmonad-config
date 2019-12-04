@@ -3,6 +3,7 @@ module Lib
     , incVolume
     , decVolume
     , toggleMute
+    , volumeControl
     ) where
 
 import           Control.Monad.IO.Class (MonadIO)
@@ -16,3 +17,6 @@ incVolume, decVolume, toggleMute :: MonadIO m => m ()
 incVolume = safeSpawn "pactl" [ "set-sink-volume", "@DEFAULT_SINK@", "+10%" ]
 decVolume = safeSpawn "pactl" [ "set-sink-volume", "@DEFAULT_SINK@", "-10%" ]
 toggleMute = safeSpawn "pactl" [ "set-sink-mute", "@DEFAULT_SINK@", "toggle" ]
+
+volumeControl :: MonadIO m => m ()
+volumeControl = safeSpawnProg "pavucontrol"

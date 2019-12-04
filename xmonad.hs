@@ -15,7 +15,7 @@ module Main where
 
 import           Data.Ratio                  ((%))
 import           Lib                         (decVolume, incVolume, lock,
-                                              toggleMute)
+                                              toggleMute, volumeControl)
 import           XMonad
 import           XMonad.Actions.CycleWS      (nextScreen, shiftNextScreen)
 import           XMonad.Actions.Minimize     (maximizeWindow, minimizeWindow,
@@ -71,6 +71,7 @@ configKeys c = c `additionalKeysP` myAdditionalKeys `removeKeysP` myRemovedKeys
         , ("M-u a", incVolume)
         , ("M-u x", decVolume)
         , ("M-u m", toggleMute)
+        , ("M-u v", volumeControl)
         ]
     myRemovedKeys :: [String]
     myRemovedKeys =
