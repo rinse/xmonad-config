@@ -1,3 +1,5 @@
 .stack-work/
 xmonad-config.cabal
+xmonad-config
+xmonad-*-*
 *~
