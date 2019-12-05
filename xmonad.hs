@@ -16,6 +16,7 @@ module Main where
 import           Data.Ratio                  ((%))
 import           Lib                         (decVolume, incVolume, lock,
                                               toggleMute, volumeControl)
+import           Lib.XineramaWS              (initScreens, nextWS, prevWS)
 import           XMonad
 import           XMonad.Actions.CycleWS      (nextScreen, shiftNextScreen)
 import           XMonad.Actions.Minimize     (maximizeWindow, minimizeWindow,
@@ -70,12 +71,15 @@ configKeys c = c `additionalKeysP` myAdditionalKeys `removeKeysP` myRemovedKeys
         , ("M-r", nextScreen)
         , ("M-S-r", shiftNextScreen >> nextScreen)
         , ("M-i", windows W.swapMaster)
+        , ("M1-C-l", nextWS)
+        , ("M1-C-h", prevWS)
         , ("M-m", withFocused minimizeWindow)
         , ("M-S-m", withLastMinimized maximizeWindow)
         , ("M-u a", incVolume)
         , ("M-u x", decVolume)
         , ("M-u m", toggleMute)
         , ("M-u v", volumeControl)
+        , ("M-u i", initScreens)
         ]
     myRemovedKeys :: [String]
     myRemovedKeys =
