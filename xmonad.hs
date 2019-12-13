@@ -13,6 +13,7 @@ module Main where
         $ export _JAVA_AWT_WM_NONREPARENTING=1
 -}
 
+import           Data.Functor                ((<&>))
 import           Data.Ratio                  ((%))
 import           Lib                         (decVolume, incVolume, lock,
                                               toggleMute, volumeControl)
@@ -46,6 +47,7 @@ main = xmobar myConfig >>= xmonad
         , layoutHook = myLayout
         , modMask = mod1Mask :: KeyMask
         , terminal = myTerminal
+        , workspaces = myWorkspaces
         }
     myLayout = avoidStruts . boringWindows . minimize $ myTiles
         where
@@ -55,6 +57,9 @@ main = xmobar myConfig >>= xmonad
 
 myTerminal :: String
 myTerminal = "lxterminal"
+
+myWorkspaces :: [WorkspaceId]
+myWorkspaces = [0..9] <&> (show :: Int -> String)
 
 configKeys :: XConfig l -> XConfig l
 configKeys c = c `additionalKeysP` myAdditionalKeys `removeKeysP` myRemovedKeys
