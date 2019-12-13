@@ -9,21 +9,45 @@ import           Data.List
 import           Data.Maybe (listToMaybe)
 
 
--- |The safe variant of head :: [a] -> a
+{- |The safe variant of 'head'.
+
+    prop> headMaybe xs == xs `at` 0
+-}
 headMaybe :: [a] -> Maybe a
 headMaybe = listToMaybe
 
--- |Safe (!!)
+{- |The safe variant of '!!'.
+
+    prop> xs `at` 0 == headMaybe xs
+-}
 at :: [a] -> Int -> Maybe a
 at xs n
     | n < length xs = Just $ xs !! n
     | otherwise = Nothing
 
--- |Sort on a key and group with the key
+{- |Sort on a key and group with the key.
+
+    >>> :{
+    groupSort
+        [ (0, "a"), (1, "b")
+        , (1, "c"), (0, "d")
+        ]
+    :}
+    [(0,["a","d"]),(1,["b","c"])]
+-}
 groupSort :: Ord k => [(k, v)] -> [(k, [v])]
 groupSort = groupWithKeyBy (==) . sortOn fst
 
--- |Similar to groupBy but with a key
+{- |Similar to 'groupBy' but with a key.
+
+    >>> :{
+    groupWithKeyBy (==)
+        [ (0, "a"), (1, "b")
+        , (1, "c"), (0, "d")
+        ]
+    :}
+    [(0,["a"]),(1,["b","c"]),(0,["d"])]
+-}
 groupWithKeyBy :: (k -> k -> Bool) -> [(k, v)] -> [(k, [v])]
 groupWithKeyBy _ [] = []
 groupWithKeyBy p ((fx, sx):xs) =
