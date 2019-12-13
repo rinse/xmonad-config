@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 
-module Lib.XineramaWS
+module Lib.XMonad.Actions.XineramaWS
     ( initScreens
     , nextWS
     , prevWS

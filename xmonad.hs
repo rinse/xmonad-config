@@ -15,9 +15,9 @@ module Main where
 
 import           Data.Functor                ((<&>))
 import           Data.Ratio                  ((%))
-import           Lib.XineramaWS              (initScreens, nextWS, prevWS)
 import           Lib.XMonad.Actions          (decVolume, incVolume, lock,
                                               toggleMute, volumeControl)
+import           Lib.XMonad.Actions.XineramaWS (initScreens, nextWS, prevWS)
 import           XMonad
 import           XMonad.Actions.CycleWS      (nextScreen, shiftNextScreen)
 import           XMonad.Actions.Minimize     (maximizeWindow, minimizeWindow,
