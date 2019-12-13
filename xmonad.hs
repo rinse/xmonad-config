@@ -13,31 +13,32 @@ module Main where
         $ export _JAVA_AWT_WM_NONREPARENTING=1
 -}
 
-import           Data.Functor                ((<&>))
-import           Data.Ratio                  ((%))
-import           Lib.XMonad.Actions          (decVolume, incVolume, lock,
-                                              toggleMute, volumeControl)
+import           Data.Functor                  ((<&>))
+import           Data.Ratio                    ((%))
+import           Lib.XMonad.Actions            (decVolume, incVolume, lock,
+                                                toggleMute, volumeControl)
 import           Lib.XMonad.Actions.XineramaWS (initScreens, nextWS, prevWS)
 import           XMonad
-import           XMonad.Actions.CycleWS      (nextScreen, shiftNextScreen)
-import           XMonad.Actions.Minimize     (maximizeWindow, minimizeWindow,
-                                              withLastMinimized)
-import           XMonad.Actions.Search       (Browser, SearchEngine, hoogle,
-                                              promptSearchBrowser)
-import           XMonad.Hooks.DynamicLog     (xmobar)
-import           XMonad.Hooks.EwmhDesktops   (ewmh)
-import           XMonad.Hooks.ManageDocks    (avoidStruts, docks)
-import           XMonad.Layout.BoringWindows (boringWindows, focusDown, focusUp)
-import           XMonad.Layout.Minimize      (minimize)
-import           XMonad.Layout.NoBorders     (noBorders)
-import           XMonad.Layout.ResizableTile (MirrorResize (MirrorExpand, MirrorShrink),
-                                              ResizableTall (ResizableTall))
-import qualified XMonad.Prompt               as P (XPConfig (..),
-                                                   XPPosition (..))
-import qualified XMonad.Prompt.Shell         as P (shellPrompt)
-import qualified XMonad.StackSet             as W
-import           XMonad.Util.EZConfig        (additionalKeysP, removeKeysP)
-import           XMonad.Util.Run             (safeSpawnProg)
+import           XMonad.Actions.CycleWS        (nextScreen, shiftNextScreen)
+import           XMonad.Actions.Minimize       (maximizeWindow, minimizeWindow,
+                                                withLastMinimized)
+import           XMonad.Actions.Search         (Browser, SearchEngine, hoogle,
+                                                promptSearchBrowser)
+import           XMonad.Hooks.DynamicLog       (xmobar)
+import           XMonad.Hooks.EwmhDesktops     (ewmh)
+import           XMonad.Hooks.ManageDocks      (avoidStruts, docks)
+import           XMonad.Layout.BoringWindows   (boringWindows, focusDown,
+                                                focusUp)
+import           XMonad.Layout.Minimize        (minimize)
+import           XMonad.Layout.NoBorders       (noBorders)
+import           XMonad.Layout.ResizableTile   (MirrorResize (MirrorExpand, MirrorShrink),
+                                                ResizableTall (ResizableTall))
+import qualified XMonad.Prompt                 as P (XPConfig (..),
+                                                     XPPosition (..))
+import qualified XMonad.Prompt.Shell           as P (shellPrompt)
+import qualified XMonad.StackSet               as W
+import           XMonad.Util.EZConfig          (additionalKeysP, removeKeysP)
+import           XMonad.Util.Run               (safeSpawnProg)
 
 
 main :: IO ()
