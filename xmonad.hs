@@ -13,9 +13,11 @@ module Main where
         $ export _JAVA_AWT_WM_NONREPARENTING=1
 -}
 
+import           Data.Functor                ((<&>))
 import           Data.Ratio                  ((%))
 import           Lib                         (decVolume, incVolume, lock,
                                               toggleMute, volumeControl)
+import           Lib.XineramaWS              (initScreens, nextWS, prevWS)
 import           XMonad
 import           XMonad.Actions.CycleWS      (nextScreen, shiftNextScreen)
 import           XMonad.Actions.Minimize     (maximizeWindow, minimizeWindow,
@@ -45,6 +47,7 @@ main = xmobar myConfig >>= xmonad
         , layoutHook = myLayout
         , modMask = mod1Mask :: KeyMask
         , terminal = myTerminal
+        , workspaces = myWorkspaces
         }
     myLayout = avoidStruts . boringWindows . minimize $ myTiles
         where
@@ -54,6 +57,9 @@ main = xmobar myConfig >>= xmonad
 
 myTerminal :: String
 myTerminal = "lxterminal"
+
+myWorkspaces :: [WorkspaceId]
+myWorkspaces = [0..9] <&> (show :: Int -> String)
 
 configKeys :: XConfig l -> XConfig l
 configKeys c = c `additionalKeysP` myAdditionalKeys `removeKeysP` myRemovedKeys
@@ -70,12 +76,15 @@ configKeys c = c `additionalKeysP` myAdditionalKeys `removeKeysP` myRemovedKeys
         , ("M-r", nextScreen)
         , ("M-S-r", shiftNextScreen >> nextScreen)
         , ("M-i", windows W.swapMaster)
+        , ("M1-C-l", nextWS)
+        , ("M1-C-h", prevWS)
         , ("M-m", withFocused minimizeWindow)
         , ("M-S-m", withLastMinimized maximizeWindow)
         , ("M-u a", incVolume)
         , ("M-u x", decVolume)
         , ("M-u m", toggleMute)
         , ("M-u v", volumeControl)
+        , ("M-u i", initScreens)
         ]
     myRemovedKeys :: [String]
     myRemovedKeys =
