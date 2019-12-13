@@ -16,7 +16,8 @@ import qualified XMonad.StackSet   as W
 
 
 {- |Initializes screen-workspace correspondence.
-    screen0: workspace0, screen1: workspace1, ..
+
+    (screen0, workspace0), (screen1, workspace1), ..
 -}
 initScreens :: X ()
 initScreens = switchScreen initialWorkspaces
