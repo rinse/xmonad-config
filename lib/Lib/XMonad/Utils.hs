@@ -1,3 +1,7 @@
+{- |It is a collection of utilities on XMonad.
+
+    Basically, they have generalized types instead of specifying 'X'.
+-}
 {-# LANGUAGE FlexibleContexts #-}
 
 module Lib.XMonad.Utils
@@ -16,7 +20,7 @@ import           XMonad
 import qualified XMonad.StackSet as W
 
 
--- |Gets xstate
+-- |Gets xstate. This is a synonym for 'get'.
 xstate :: MonadState XState m => m XState
 xstate = get
 
@@ -24,7 +28,7 @@ xstate = get
 xwindowset :: MonadState XState m => m WindowSet
 xwindowset = windowset <$> xstate
 
--- |Gets xconf
+-- |Gets xconf. This is a synonym for 'ask'.
 xconf :: MonadReader XConf m => m XConf
 xconf = ask
 
