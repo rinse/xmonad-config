@@ -1,4 +1,4 @@
-module Lib
+module Lib.XMonad.Actions
     ( lock
     , incVolume
     , decVolume
