@@ -22,6 +22,8 @@ import           XMonad
 import           XMonad.Actions.CycleWS      (nextScreen, shiftNextScreen)
 import           XMonad.Actions.Minimize     (maximizeWindow, minimizeWindow,
                                               withLastMinimized)
+import           XMonad.Actions.Search       (Browser, SearchEngine, hoogle,
+                                              promptSearchBrowser)
 import           XMonad.Hooks.DynamicLog     (xmobar)
 import           XMonad.Hooks.EwmhDesktops   (ewmh)
 import           XMonad.Hooks.ManageDocks    (avoidStruts, docks)
@@ -68,7 +70,7 @@ configKeys c = c `additionalKeysP` myAdditionalKeys `removeKeysP` myRemovedKeys
     myAdditionalKeys =
         [ ("M4-l", lock)
         , ("M1-C-t", safeSpawnProg myTerminal)
-        , ("M-p", P.shellPrompt myShellPrompt)
+        , ("M-p", P.shellPrompt myPromptConfig)
         , ("M-a", sendMessage MirrorShrink)
         , ("M-z", sendMessage MirrorExpand)
         , ("M-j", focusDown)
@@ -85,6 +87,7 @@ configKeys c = c `additionalKeysP` myAdditionalKeys `removeKeysP` myRemovedKeys
         , ("M-u m", toggleMute)
         , ("M-u v", volumeControl)
         , ("M-u i", initScreens)
+        , ("M-u h", myPrompt hoogle)
         ]
     myRemovedKeys :: [String]
     myRemovedKeys =
@@ -92,8 +95,14 @@ configKeys c = c `additionalKeysP` myAdditionalKeys `removeKeysP` myRemovedKeys
         , "M1-<Return>" -- For intellij idea. Use M-i instead
         ]
 
-myShellPrompt :: P.XPConfig
-myShellPrompt = def
+myPrompt :: SearchEngine -> X ()
+myPrompt = promptSearchBrowser myPromptConfig myBrowser
+
+myBrowser :: Browser
+myBrowser = "chromium-browser"
+
+myPromptConfig :: P.XPConfig
+myPromptConfig = def
     { P.font = "-misc-fixed-*-*-*-*-18-*-*-*-*-*-*-*"
     , P.position = P.Top
     , P.height = 20
