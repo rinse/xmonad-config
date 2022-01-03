@@ -4,7 +4,7 @@ import           Lib.XMonad.Actions.XineramaWS
 import           Test.Hspec
 
 spec :: Spec
-spec =
+spec = do
     describe "correspondence" $ do
         it "corresponds all workspaces to that screen, when there is one screen." $ do
             let screenIds = [1] :: [Int]
@@ -30,3 +30,24 @@ spec =
             let screenIds = [] :: [Int]
                 workspaceIds = ["1"]
             correspondence screenIds workspaceIds `shouldBe` []
+    describe "correspondingWorkspaces" $ do
+        it "returns corresponding workspaces to a specific screen." $ do
+            let screenIds = [1, 2]
+                workspaceIds = ["1", "2", "3", "4"]
+                currentScreenId = 1 :: Int
+            getCorresponding screenIds workspaceIds currentScreenId `shouldBe` ["1", "3"]
+        it "returns an empty list for an unknown screen id." $ do
+            let screenIds = [1, 2]
+                workspaceIds = ["1", "2", "3", "4"]
+                currentScreenId = 3 :: Int
+            getCorresponding screenIds workspaceIds currentScreenId `shouldBe` []
+        it "returns an empty list for no workspaces" $ do
+            let screenIds = [1]
+                workspaceIds = [] :: String
+                currentScreenId = 3 :: Int
+            getCorresponding screenIds workspaceIds currentScreenId `shouldBe` []
+        xit "throws an exception when there are not screens" $ do
+            let screenIds = []
+                workspaceIds = ["1", "2", "3", "4"]
+                currentScreenId = 3 :: Int
+            getCorresponding screenIds workspaceIds currentScreenId `shouldBe` []

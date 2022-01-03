@@ -4,16 +4,19 @@ module Lib.XMonad.Actions.XineramaWS
     ( initScreens
     , nextWS
     , prevWS
+    , getCorresponding
     , correspondence
     ) where
 
 import           Control.Monad
-import           Data.List
+import qualified Data.List          as L
+import           Lens.Micro         (to)
+import           Lens.Micro.Mtl     (use, view)
 import           Lib.Utils
+import           Lib.XMonad.Classes (HasWindowSet (..), HasWorkspaces (..))
 import           Lib.XMonad.Utils
 import           XMonad
-import           XMonad.Operations (screenWorkspace)
-import qualified XMonad.StackSet   as W
+import qualified XMonad.StackSet    as W
 
 
 {- |Initializes screen-workspace correspondence.
@@ -54,7 +57,10 @@ switchScreen f =
 -}
 initialWorkspaces :: (MonadState XState m, MonadReader XConf m)
                   => ScreenId -> m (Maybe WorkspaceId)
-initialWorkspaces sid = headMaybe <$> getCorresponding sid
+initialWorkspaces sId = do
+    sIds <- use $ windowSetL . to screenIds
+    wIds <- view workspacesL
+    pure . headMaybe $ getCorresponding sIds wIds sId
 
 -- |The next workspace of the screen.
 nextWorkspace :: (MonadState XState m, MonadReader XConf m)
@@ -70,10 +76,12 @@ prevWorkspace = neighbourWorkspace (subtract 1)
 neighbourWorkspace :: (MonadState XState m, MonadReader XConf m)
                    => (Int -> Int) -> ScreenId -> m (Maybe WorkspaceId)
 neighbourWorkspace f sid = do
-    cwid <- currentWorkspaceId
-    wids <- getCorresponding sid
+    currentWId <- currentWorkspaceId <$> xstate
+    sids <- use $ windowSetL . to screenIds
+    allWorkspaceIds <- view workspacesL
+    let wids = getCorresponding sids allWorkspaceIds sid
     return $ do
-        i <- elemIndex cwid wids
+        i <- L.elemIndex currentWId wids
         wids `at` f i
 
 -- |Switches screens
@@ -83,14 +91,9 @@ xviewS i = do
     whenJust s $ windows . W.view
 
 -- |Gets corresponding workspaces to the given screen.
-getCorresponding :: (MonadState XState m, MonadReader XConf m)
-                 => ScreenId -> m [WorkspaceId]
-getCorresponding sid = do
-    sids <- screenIds <$> xstate
-    wids <- workspaceIds <$> xconf
-    pure $ maybe [] snd . find f $ correspondence sids wids
+getCorresponding :: Ord a => [a] -> [b] -> a -> [b]
+getCorresponding sids wids sid = maybe [] snd . L.find f $ correspondence sids wids
     where
-    f :: (ScreenId, [WorkspaceId]) -> Bool
     f = (sid ==) . fst
 
 {- |Correspondence between screenId and workspaceId.
