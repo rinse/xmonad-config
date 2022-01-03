@@ -4,6 +4,7 @@ module Lib.XMonad.Actions.XineramaWS
     ( initScreens
     , nextWS
     , prevWS
+    , neighbourWorkspace
     , getCorresponding
     , correspondence
     ) where
@@ -65,24 +66,28 @@ initialWorkspaces sId = do
 -- |The next workspace of the screen.
 nextWorkspace :: (MonadState XState m, MonadReader XConf m)
               => ScreenId -> m (Maybe WorkspaceId)
-nextWorkspace = neighbourWorkspace (+ 1)
+nextWorkspace screenId = do
+    sids <- use $ windowSetL . to screenIds
+    allWorkspaceIds <- view workspacesL
+    let wids = getCorresponding sids allWorkspaceIds screenId
+    currentWId <- currentWorkspaceId <$> xstate
+    pure $ neighbourWorkspace wids currentWId (+ 1)
 
 -- |The previous workspace of the screen.
 prevWorkspace :: (MonadState XState m, MonadReader XConf m)
               => ScreenId -> m (Maybe WorkspaceId)
-prevWorkspace = neighbourWorkspace (subtract 1)
-
--- |Gets some neighbour workspaces
-neighbourWorkspace :: (MonadState XState m, MonadReader XConf m)
-                   => (Int -> Int) -> ScreenId -> m (Maybe WorkspaceId)
-neighbourWorkspace f sid = do
-    currentWId <- currentWorkspaceId <$> xstate
+prevWorkspace screenId = do
     sids <- use $ windowSetL . to screenIds
     allWorkspaceIds <- view workspacesL
-    let wids = getCorresponding sids allWorkspaceIds sid
-    return $ do
-        i <- L.elemIndex currentWId wids
-        wids `at` f i
+    let wids = getCorresponding sids allWorkspaceIds screenId
+    currentWId <- currentWorkspaceId <$> xstate
+    pure $ neighbourWorkspace wids currentWId (subtract 1)
+
+-- |Gets some neighbour workspaces
+neighbourWorkspace :: Eq a => [a] -> a -> (Int -> Int) -> Maybe a
+neighbourWorkspace wids currentWId f = do
+    i <- L.elemIndex currentWId wids
+    wids `at` f i
 
 -- |Switches screens
 xviewS :: ScreenId -> X ()
