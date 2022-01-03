@@ -4,6 +4,7 @@ module Lib.XMonad.Actions.XineramaWS
     ( initScreens
     , nextWS
     , prevWS
+    , correspondence
     ) where
 
 import           Control.Monad
@@ -84,16 +85,16 @@ xviewS i = do
 -- |Gets corresponding workspaces to the given screen.
 getCorresponding :: (MonadState XState m, MonadReader XConf m)
                  => ScreenId -> m [WorkspaceId]
-getCorresponding sid = maybe [] snd . find f <$> correspondence
+getCorresponding sid = do
+    sids <- screenIds <$> xstate
+    wids <- workspaceIds <$> xconf
+    pure $ maybe [] snd . find f $ correspondence sids wids
     where
     f :: (ScreenId, [WorkspaceId]) -> Bool
     f = (sid ==) . fst
 
-{- |Correnspondence between screenId and workspaceId.
-    WorkspaceIds must not be empty.
+{- |Correspondence between screenId and workspaceId.
+    Screen ids must not be empty.
 -}
-correspondence :: (MonadState XState m, MonadReader XConf m)
-               => m [(ScreenId, [WorkspaceId])]
-correspondence = do
-    sids <- screenIds
-    groupSort . zip (cycle sids) <$> workspaceIds
+correspondence :: Ord a => [a] -> [b] -> [(a, [b])]
+correspondence a = groupSort . zip (cycle a)

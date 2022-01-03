@@ -55,6 +55,7 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - xmonad-config
+    - hspec >= 2.7.0
 
   doctest:
     main:                Spec.hs
