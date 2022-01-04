@@ -30,6 +30,8 @@ dependencies:
 - base >= 4.7 && < 5
 - xmonad >= 0.15
 - xmonad-contrib >= 0.15
+- microlens
+- microlens-mtl
 
 library:
   source-dirs: lib
@@ -55,6 +57,7 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - xmonad-config
+    - hspec >= 2.7.0
 
   doctest:
     main:                Spec.hs

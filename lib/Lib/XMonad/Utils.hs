@@ -9,13 +9,14 @@ module Lib.XMonad.Utils
     , xwindowset
     , xconfig
     , workspaceIds
+    , xconf
     , currentWorkspaceId
     , currentScreenId
     , screenIds
     ) where
 
 import           Data.Functor    ((<&>))
-import           Data.List
+import qualified Data.List       as L
 import           XMonad
 import qualified XMonad.StackSet as W
 
@@ -41,15 +42,13 @@ workspaceIds :: MonadReader XConf m => m [WorkspaceId]
 workspaceIds = workspaces <$> xconfig
 
 -- |Gets the current workspace
-currentWorkspaceId :: MonadState XState m => m WorkspaceId
-currentWorkspaceId = xwindowset <&> W.current <&> W.workspace <&> W.tag
+currentWorkspaceId :: XState -> WorkspaceId
+currentWorkspaceId = W.tag . W.workspace . W.current . windowset
 
 -- |Gets the current screen
 currentScreenId :: MonadState XState m => m ScreenId
 currentScreenId = xwindowset <&> W.current <&> W.screen
 
 -- |Available screenIds
-screenIds :: MonadState XState m => m [ScreenId]
-screenIds = do
-    s <- W.screens <$> xwindowset
-    return $ sort $ W.screen <$> s
+screenIds :: WindowSet -> [ScreenId]
+screenIds = L.sort . fmap W.screen . W.screens
