@@ -1,6 +1,5 @@
 module Lib.Utils
     ( headMaybe
-    , at
     , groupSort
     , groupWithKeyBy
     ) where
@@ -8,22 +7,15 @@ module Lib.Utils
 import           Data.List
 import           Data.Maybe (listToMaybe)
 
+{- $setup
+    >>> import Lens.Micro
+-}
 
 {- |The safe variant of 'head'.
-
-    prop> headMaybe xs == xs `at` 0
+    prop> headMaybe xs == xs ^? ix 0
 -}
 headMaybe :: [a] -> Maybe a
 headMaybe = listToMaybe
-
-{- |The safe variant of '!!'.
-
-    prop> xs `at` 0 == headMaybe xs
--}
-at :: [a] -> Int -> Maybe a
-at xs n
-    | n < length xs = Just $ xs !! n
-    | otherwise = Nothing
 
 {- |Sort on a key and group with the key.
 
