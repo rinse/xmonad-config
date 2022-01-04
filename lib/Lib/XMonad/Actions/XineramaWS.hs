@@ -5,12 +5,12 @@ module Lib.XMonad.Actions.XineramaWS
     , nextWS
     , prevWS
     , neighbourWorkspace
-    , getCorresponding
     , correspondence
     ) where
 
 import           Control.Monad
 import qualified Data.List          as L
+import           Data.Maybe
 import           Lens.Micro         (to)
 import           Lens.Micro.Mtl     (use, view)
 import           Lib.Utils
@@ -61,7 +61,7 @@ initialWorkspaces :: (MonadState XState m, MonadReader XConf m)
 initialWorkspaces sId = do
     sIds <- use $ windowSetL . to screenIds
     wIds <- view workspacesL
-    pure . headMaybe $ getCorresponding sIds wIds sId
+    pure $ lookup sId (correspondence sIds wIds) >>= headMaybe
 
 -- |The next workspace of the screen.
 nextWorkspace :: (MonadState XState m, MonadReader XConf m)
@@ -69,7 +69,8 @@ nextWorkspace :: (MonadState XState m, MonadReader XConf m)
 nextWorkspace screenId = do
     sids <- use $ windowSetL . to screenIds
     allWorkspaceIds <- view workspacesL
-    let wids = getCorresponding sids allWorkspaceIds screenId
+    let a = correspondence sids allWorkspaceIds
+    let wids = fromMaybe [] $ lookup screenId a
     currentWId <- currentWorkspaceId <$> xstate
     pure $ neighbourWorkspace wids currentWId (+ 1)
 
@@ -79,7 +80,8 @@ prevWorkspace :: (MonadState XState m, MonadReader XConf m)
 prevWorkspace screenId = do
     sids <- use $ windowSetL . to screenIds
     allWorkspaceIds <- view workspacesL
-    let wids = getCorresponding sids allWorkspaceIds screenId
+    let a = correspondence sids allWorkspaceIds
+    let wids = fromMaybe [] $ lookup screenId a
     currentWId <- currentWorkspaceId <$> xstate
     pure $ neighbourWorkspace wids currentWId (subtract 1)
 
@@ -94,12 +96,6 @@ xviewS :: ScreenId -> X ()
 xviewS i = do
     s <- screenWorkspace i
     whenJust s $ windows . W.view
-
--- |Gets corresponding workspaces to the given screen.
-getCorresponding :: Ord a => [a] -> [b] -> a -> [b]
-getCorresponding sids wids sid = maybe [] snd . L.find f $ correspondence sids wids
-    where
-    f = (sid ==) . fst
 
 {- |Correspondence between screenId and workspaceId.
     Screen ids must not be empty.

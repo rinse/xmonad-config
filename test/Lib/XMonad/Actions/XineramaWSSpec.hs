@@ -30,27 +30,6 @@ spec = do
             let screenIds = [] :: [Int]
                 workspaceIds = ["1"]
             correspondence screenIds workspaceIds `shouldBe` []
-    describe "correspondingWorkspaces" $ do
-        it "returns corresponding workspaces to a specific screen." $ do
-            let screenIds = [1, 2]
-                workspaceIds = ["1", "2", "3", "4"]
-                currentScreenId = 1 :: Int
-            getCorresponding screenIds workspaceIds currentScreenId `shouldBe` ["1", "3"]
-        it "returns an empty list for an unknown screen id." $ do
-            let screenIds = [1, 2]
-                workspaceIds = ["1", "2", "3", "4"]
-                currentScreenId = 3 :: Int
-            getCorresponding screenIds workspaceIds currentScreenId `shouldBe` []
-        it "returns an empty list for no workspaces" $ do
-            let screenIds = [1]
-                workspaceIds = [] :: String
-                currentScreenId = 3 :: Int
-            getCorresponding screenIds workspaceIds currentScreenId `shouldBe` []
-        xit "throws an exception when there are not screens" $ do
-            let screenIds = []
-                workspaceIds = ["1", "2", "3", "4"]
-                currentScreenId = 3 :: Int
-            getCorresponding screenIds workspaceIds currentScreenId `shouldBe` []
     describe "neighbourWorkspace" $ do
         it "takes a list and a current element and function to iterate the list" $
             neighbourWorkspace ['W', 'O', 'R', 'L', 'D'] 'O' (+ 2) `shouldBe` Just 'L'
