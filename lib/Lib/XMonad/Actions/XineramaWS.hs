@@ -11,10 +11,10 @@ module Lib.XMonad.Actions.XineramaWS
 import           Control.Monad
 import qualified Data.List          as L
 import           Data.Maybe
-import           Lens.Micro         (to, ix, (^?))
+import           Lens.Micro         (ix, (^?))
 import           Lens.Micro.Mtl     (use, view)
 import           Lib.Utils
-import           Lib.XMonad.Classes (HasWindowSet (..), HasWorkspaces (..))
+import           Lib.XMonad.Classes (HasCurrentWorkspaceTag (..), HasScreenIds (..), HasWorkspaces (..))
 import           Lib.XMonad.Utils
 import           XMonad
 import qualified XMonad.StackSet    as W
@@ -56,34 +56,36 @@ switchScreen f =
 {- |Obtain an initial workspace of the given screen id.
     Returns Nothing when there is no screen for sid.
 -}
-initialWorkspaces :: (MonadState XState m, MonadReader XConf m)
+initialWorkspaces :: (MonadState st m, MonadReader env m, HasScreenIds st, HasWorkspaces env)
                   => ScreenId -> m (Maybe WorkspaceId)
 initialWorkspaces sId = do
-    sIds <- use $ windowSetL . to screenIds
+    sIds <- use screenIdsG
     wIds <- view workspacesL
     pure $ lookup sId (correspondence sIds wIds) >>= headMaybe
 
 -- |The next workspace of the screen.
-nextWorkspace :: (MonadState XState m, MonadReader XConf m)
-              => ScreenId -> m (Maybe WorkspaceId)
+nextWorkspace :: ( MonadState st m, MonadReader env m
+                 , HasScreenIds st, HasCurrentWorkspaceTag st WorkspaceId
+                 , HasWorkspaces env
+                 ) => ScreenId -> m (Maybe WorkspaceId)
 nextWorkspace screenId = do
-    sids <- use $ windowSetL . to screenIds
+    sids <- use screenIdsG
     allWorkspaceIds <- view workspacesL
-    let a = correspondence sids allWorkspaceIds
-    let wids = fromMaybe [] $ lookup screenId a
-    currentWId <- currentWorkspaceId <$> xstate
-    pure $ neighbourWorkspace wids currentWId (+ 1)
+    let wids = fromMaybe [] $ lookup screenId $ correspondence sids allWorkspaceIds
+    currentWorkspaceTag <- use currentWorkspaceTagL
+    pure $ neighbourWorkspace wids currentWorkspaceTag (+ 1)
 
 -- |The previous workspace of the screen.
-prevWorkspace :: (MonadState XState m, MonadReader XConf m)
-              => ScreenId -> m (Maybe WorkspaceId)
+prevWorkspace :: ( MonadState st m, MonadReader env m
+                 , HasScreenIds st, HasCurrentWorkspaceTag st WorkspaceId
+                 , HasWorkspaces env
+                 ) => ScreenId -> m (Maybe WorkspaceId)
 prevWorkspace screenId = do
-    sids <- use $ windowSetL . to screenIds
+    sids <- use screenIdsG
     allWorkspaceIds <- view workspacesL
-    let a = correspondence sids allWorkspaceIds
-    let wids = fromMaybe [] $ lookup screenId a
-    currentWId <- currentWorkspaceId <$> xstate
-    pure $ neighbourWorkspace wids currentWId (subtract 1)
+    let wids = fromMaybe [] $ lookup screenId $ correspondence sids allWorkspaceIds
+    currentWorkspaceTag <- use currentWorkspaceTagL
+    pure $ neighbourWorkspace wids currentWorkspaceTag (subtract 1)
 
 -- |Gets some neighbour workspaces
 neighbourWorkspace :: Eq a => [a] -> a -> (Int -> Int) -> Maybe a
