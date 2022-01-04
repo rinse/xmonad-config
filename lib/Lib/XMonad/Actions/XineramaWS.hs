@@ -11,7 +11,7 @@ module Lib.XMonad.Actions.XineramaWS
 import           Control.Monad
 import qualified Data.List          as L
 import           Data.Maybe
-import           Lens.Micro         (to)
+import           Lens.Micro         (to, ix, (^?))
 import           Lens.Micro.Mtl     (use, view)
 import           Lib.Utils
 import           Lib.XMonad.Classes (HasWindowSet (..), HasWorkspaces (..))
@@ -87,9 +87,9 @@ prevWorkspace screenId = do
 
 -- |Gets some neighbour workspaces
 neighbourWorkspace :: Eq a => [a] -> a -> (Int -> Int) -> Maybe a
-neighbourWorkspace wids currentWId f = do
-    i <- L.elemIndex currentWId wids
-    wids `at` f i
+neighbourWorkspace l e updateIndex = do
+    i <- L.elemIndex e l
+    l ^? ix (updateIndex i)
 
 -- |Switches screens
 xviewS :: ScreenId -> X ()
