@@ -30,12 +30,12 @@ spec = do
             let screenIds = [] :: [Int]
                 workspaceIds = ["1"]
             correspondence screenIds workspaceIds `shouldBe` []
-    describe "neighbourWorkspace" $ do
+    describe "stepElement" $ do
         it "takes a list and a current element and function to iterate the list" $
-            neighbourWorkspace ['W', 'O', 'R', 'L', 'D'] 'O' (+ 2) `shouldBe` Just 'L'
+            stepElement (+ 2) ['W', 'O', 'R', 'L', 'D'] 'O' `shouldBe` Just 'L'
         it "also works for backward iteration" $
-            neighbourWorkspace ['W', 'O', 'R', 'L', 'D'] 'O' (subtract 1) `shouldBe` Just 'W'
+            stepElement (subtract 1) ['W', 'O', 'R', 'L', 'D'] 'O' `shouldBe` Just 'W'
         it "returns Nothing when the list doesn't have enough length" $
-            neighbourWorkspace ['W', 'O', 'R', 'L', 'D'] 'O' (+ 4) `shouldBe` Nothing
+            stepElement (+ 4) ['W', 'O', 'R', 'L', 'D'] 'O' `shouldBe` Nothing
         it "returns Nothing when a current element doesn't found in a list" $
-            neighbourWorkspace ['W', 'O', 'R', 'L', 'D'] 'M' (+ 2) `shouldBe` Nothing
+            stepElement (+ 2) ['W', 'O', 'R', 'L', 'D'] 'M' `shouldBe` Nothing

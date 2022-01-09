@@ -4,7 +4,7 @@ module Lib.XMonad.Actions.XineramaWS
     ( initScreens
     , nextWS
     , prevWS
-    , neighbourWorkspace
+    , stepElement
     , correspondence
     ) where
 
@@ -73,7 +73,7 @@ nextWorkspace screenId = do
     allWorkspaceIds <- view workspacesL
     let wids = fromMaybe [] $ lookup screenId $ correspondence sids allWorkspaceIds
     currentWorkspaceTag <- use currentWorkspaceTagL
-    pure $ neighbourWorkspace wids currentWorkspaceTag (+ 1)
+    pure $ stepElement (+ 1) wids currentWorkspaceTag
 
 -- |The previous workspace of the screen.
 prevWorkspace :: ( MonadState st m, MonadReader env m
@@ -85,11 +85,12 @@ prevWorkspace screenId = do
     allWorkspaceIds <- view workspacesL
     let wids = fromMaybe [] $ lookup screenId $ correspondence sids allWorkspaceIds
     currentWorkspaceTag <- use currentWorkspaceTagL
-    pure $ neighbourWorkspace wids currentWorkspaceTag (subtract 1)
+    pure $ stepElement (subtract 1) wids currentWorkspaceTag
 
--- |Gets some neighbour workspaces
-neighbourWorkspace :: Eq a => [a] -> a -> (Int -> Int) -> Maybe a
-neighbourWorkspace l e updateIndex = do
+-- |Steps an element of a list with an update function.
+-- |The update function gets and returns an index.
+stepElement :: Eq a => (Int -> Int) -> [a] -> a -> Maybe a
+stepElement updateIndex l e = do
     i <- L.elemIndex e l
     l ^? ix (updateIndex i)
 
