@@ -6,49 +6,37 @@
 
 module Lib.XMonad.Utils
     ( xstate
-    , xwindowset
-    , xconfig
-    , workspaceIds
-    , xconf
-    , currentWorkspaceId
-    , currentScreenId
+    , sortedScreenIds
     , screenIds
+    , passEnvAndState
+    , (??)
     ) where
 
-import           Data.Functor    ((<&>))
 import qualified Data.List       as L
+import           Lens.Micro.Extras
+import           Lib.XMonad.Classes
 import           XMonad
 import qualified XMonad.StackSet as W
-
 
 -- |Gets xstate. This is a synonym for 'get'.
 xstate :: MonadState XState m => m XState
 xstate = get
 
--- |Gets windowset
-xwindowset :: MonadState XState m => m WindowSet
-xwindowset = windowset <$> xstate
+-- |Takes all screens from an environment.
+sortedScreenIds :: (HasCurrent st, HasVisible st) => st -> [ScreenId]
+sortedScreenIds st = L.sort $ screenIds st
 
--- |Gets xconf. This is a synonym for 'ask'.
-xconf :: MonadReader XConf m => m XConf
-xconf = ask
+-- |Takes all screens from an environment.
+screenIds :: (HasCurrent st, HasVisible st) => st -> [ScreenId]
+screenIds st = fmap W.screen $ view currentL st : view visibleL st
 
--- |Gets xconfig
-xconfig :: MonadReader XConf m => m (XConfig Layout)
-xconfig = config <$> xconf
+-- |Passes a current environment and state to a function.
+-- |It doesn't change the current state.
+passEnvAndState :: (MonadState st m, MonadReader env m) => (env -> st -> a) -> m a
+passEnvAndState f = do
+    env <- ask
+    f env <$> get
 
--- |Gets workspaceIds
-workspaceIds :: MonadReader XConf m => m [WorkspaceId]
-workspaceIds = workspaces <$> xconfig
-
--- |Gets the current workspace
-currentWorkspaceId :: XState -> WorkspaceId
-currentWorkspaceId = W.tag . W.workspace . W.current . windowset
-
--- |Gets the current screen
-currentScreenId :: MonadState XState m => m ScreenId
-currentScreenId = xwindowset <&> W.current <&> W.screen
-
--- |Available screenIds
-screenIds :: WindowSet -> [ScreenId]
-screenIds = L.sort . fmap W.screen . W.screens
+infixl 1 ??
+(??) :: Functor f => f (a -> b) -> a -> f b
+f ?? a = fmap ($ a) f
