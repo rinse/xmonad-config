@@ -1,12 +1,17 @@
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FunctionalDependencies #-}
-module Lib.XMonad.Classes where
+module Lib.XMonad.Classes
+    ( HasConfig (..)
+    , HasWorkspaces (..)
+    , HasWindowSet (..)
+    , HasCurrent (..)
+    , HasVisible (..)
+    , HasHidden (..)
+    ) where
 
 import           Lens.Micro
-import           Lib.XMonad.Utils
 import           XMonad
-import           XMonad.StackSet (current, tag, workspace)
+import qualified XMonad.StackSet as W
 
 idLens :: Lens' a a
 idLens = lens id $ \_ y -> y
@@ -23,11 +28,18 @@ class HasWindowSet s where
 instance HasWindowSet WindowSet where
     windowSetL = idLens
 
-class HasScreenIds s where
-    screenIdsG :: SimpleGetter s [ScreenId]
+type WScreen = W.Screen WorkspaceId (Layout Window) Window ScreenId ScreenDetail
 
-class HasCurrentWorkspaceTag s i | s -> i where
-    currentWorkspaceTagL :: Lens' s i
+class HasCurrent s where
+    currentL :: Lens' s WScreen
+
+class HasVisible s where
+    visibleL :: Lens' s [WScreen]
+
+type WWorkspace = W.Workspace WorkspaceId (Layout Window) Window
+
+class HasHidden s where
+    hiddenL :: Lens' s [WWorkspace]
 
 instance HasConfig XConf where
     configL = lens config $ \x y -> x { config = y }
@@ -41,12 +53,20 @@ instance HasWorkspaces XConf where
 instance HasWindowSet XState where
     windowSetL = lens windowset $ \x y -> x { windowset = y }
 
-instance HasScreenIds XState where
-    screenIdsG = windowSetL . to screenIds
+instance HasCurrent WindowSet where
+    currentL = lens W.current $ \x y -> x { W.current = y }
 
-instance HasCurrentWorkspaceTag XState WorkspaceId where
-    currentWorkspaceTagL = windowSetL . currentL . workspaceL . tagL
-        where
-        currentL = lens current $ \x y -> x { current = y }
-        workspaceL = lens workspace $ \x y -> x { workspace = y }
-        tagL = lens tag $ \x y -> x { tag = y }
+instance HasCurrent XState where
+    currentL = windowSetL . currentL
+
+instance HasVisible WindowSet where
+    visibleL = lens W.visible $ \x y -> x { W.visible = y }
+
+instance HasVisible XState where
+    visibleL = windowSetL . visibleL
+
+instance HasHidden WindowSet where
+    hiddenL = lens W.hidden $ \x y -> x { W.hidden = y }
+
+instance HasHidden XState where
+    hiddenL = windowSetL . hiddenL
