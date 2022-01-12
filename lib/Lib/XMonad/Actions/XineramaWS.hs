@@ -37,23 +37,25 @@ nextWS = switchScreen $ \screenId -> passEnvAndState nextWorkspace ?? screenId
 prevWS :: X ()
 prevWS = switchScreen $ \screenId -> passEnvAndState prevWorkspace ?? screenId
 
-{- |Switches screen to the workspace.
-    Does nothing when the workspace not found.
--}
+-- |Switches all screens to a next workspace.
+-- |The next workspace is fetched by an input function.
+-- |When the function returns @Nothing@, does nothing to the screen.
 switchScreen :: (ScreenId -> X (Maybe WorkspaceId)) -> X ()
-switchScreen f =
-    withCurrentScreen $ do
-        ss <- use $ to screenIds
-        forM_ ss $ \s -> do
-            xviewS s -- switch screens temporarily
-            newW <- f s
-            whenJust newW $ windows . W.greedyView
-    where
-    withCurrentScreen action = do
-        csid <- use $ currentL . screenL
-        r <- action
-        xviewS csid
-        return r
+switchScreen f = withCurrentScreen $ do
+    sids <- use $ to screenIds
+    forM_ sids $ \screenId -> do
+        xviewS screenId -- switch screens temporarily
+        newWorkspace <- f screenId
+        whenJust newWorkspace $ windows . W.greedyView
+
+-- |Stores a current screen and runs a given @action@.
+-- |Then restores the screen and returns the value from the @action@.
+withCurrentScreen :: X a -> X a
+withCurrentScreen action = do
+    originalScreenId <- use $ currentL . screenL
+    r <- action
+    xviewS originalScreenId
+    pure r
 
 {- |Obtain an initial workspace of the given screen id.
     Returns Nothing when there is no screen for sid.
@@ -97,7 +99,8 @@ stepElement updateIndex l e = do
     i <- L.elemIndex e l
     l ^? ix (updateIndex i)
 
--- |Switches screens
+-- |Set focus to a given @ScreenId@.
+-- |Do nothing when there is no such screen.
 xviewS :: ScreenId -> X ()
 xviewS i = do
     s <- screenWorkspace i
