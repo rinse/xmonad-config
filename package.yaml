@@ -59,6 +59,7 @@ tests:
     - xmonad-config
     - hspec >= 2.7.0
     - containers
+    - mtl
 
   doctest:
     main:                Spec.hs
