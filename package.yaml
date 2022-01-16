@@ -58,6 +58,7 @@ tests:
     dependencies:
     - xmonad-config
     - hspec >= 2.7.0
+    - containers
 
   doctest:
     main:                Spec.hs

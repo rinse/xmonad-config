@@ -1,12 +1,18 @@
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+
 module Lib.XMonad.Actions.XineramaWSSpec (spec) where
 
+import qualified Data.Map                      as M
 import           Lens.Micro
 import           Lib.XMonad.Actions.XineramaWS
 import           Lib.XMonad.Classes
+import           Lib.XMonad.Lenses
 import           Lib.XMonad.ScreensMock
 import           Test.Hspec
 import           Test.Hspec.QuickCheck
 import           XMonad
+import qualified XMonad.StackSet               as W
 
 spec :: Spec
 spec = do
@@ -111,9 +117,80 @@ spec = do
                             }
             initialWorkspaces envMock stMock 1 `shouldBe` Just "5"
 
+    describe "xviewS" $ do
+        context "it switches focus to a visible screen i" $ do
+            it "switches a current screen to i" $ do
+                let windowSet = mockWindowSet
+                        (mockScreen 1 (mockWorkspace "1"))  -- current screen
+                        [ mockScreen 2 (mockWorkspace "2")  -- visible screens
+                        , mockScreen 3 (mockWorkspace "3")
+                        ]
+                let actual = xviewS' 2 windowSet
+                (actual ^. currentL . to W.screen) `shouldBe` 2
+            it "sends the current screen to visible screens" $ do
+                let windowSet = mockWindowSet
+                        (mockScreen 1 (mockWorkspace "1"))  -- current screen
+                        [ mockScreen 2 (mockWorkspace "2")  -- visible screens
+                        , mockScreen 3 (mockWorkspace "3")
+                        ]
+                let actual = xviewS' 2 windowSet
+                (actual ^. visibleL . to (fmap W.screen)) `shouldBe` [1, 3]
+        it "does nothing when i is an invalid screen id" $ do
+            let windowSet = mockWindowSet
+                    (mockScreen 1 (mockWorkspace "1"))  -- current screen
+                    [ mockScreen 2 (mockWorkspace "2")  -- visible screens
+                    , mockScreen 3 (mockWorkspace "3")
+                    ]
+            let actual = xviewS' 4 windowSet
+            (actual ^. currentL . screenL) `shouldBe` 1 -- A current screen id doesn't change
+
+
 newtype EnvMock = EnvMock
     { _workspaces :: [WorkspaceId]
     }
 
 instance HasWorkspaces EnvMock where
     workspacesL = lens _workspaces $ \x y -> x { _workspaces = y }
+
+mockLayout :: Layout Window
+mockLayout = Layout Full
+
+newtype MockLayout a = MockLayout ()
+    deriving (Eq, Read, Show)
+
+instance LayoutClass MockLayout a
+
+mockWorkspace :: i -> W.Workspace i (Layout Window) a
+mockWorkspace tag = W.Workspace
+    { W.tag = tag
+    , W.layout = mockLayout
+    , W.stack = Nothing
+    }
+
+mockScreenDetail :: ScreenDetail
+mockScreenDetail = SD
+    { screenRect = Rectangle
+        { rect_x = 0
+        , rect_y = 0
+        , rect_width = 0
+        , rect_height = 0
+        }
+    }
+
+mockScreen :: ScreenId -> W.Workspace i (Layout Window) a -> W.Screen i (Layout Window) a ScreenId ScreenDetail
+mockScreen sid workspace = W.Screen
+    { W.workspace = workspace
+    , W.screen = sid
+    , W.screenDetail = mockScreenDetail
+    }
+
+-- type WindowSet   = StackSet  WorkspaceId (Layout Window) Window ScreenId ScreenDetail
+mockWindowSet :: W.Screen i (Layout Window) a ScreenId ScreenDetail
+              -> [W.Screen i (Layout Window) a ScreenId ScreenDetail]
+              -> W.StackSet i (Layout Window) a ScreenId ScreenDetail
+mockWindowSet current visible = W.StackSet
+    { W.current = current
+    , W.visible = visible
+    , W.hidden = []
+    , W.floating = M.empty
+    }

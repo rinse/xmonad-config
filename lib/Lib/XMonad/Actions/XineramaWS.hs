@@ -4,6 +4,7 @@ module Lib.XMonad.Actions.XineramaWS
     ( initScreens
     , nextWS
     , prevWS
+    , xviewS'
     , initialWorkspaces    -- Only for testings
     , stepElement          -- Only for testings
     , stepWorkspace        -- Only for testings
@@ -13,7 +14,7 @@ module Lib.XMonad.Actions.XineramaWS
 
 import           Control.Monad
 import qualified Data.List          as L
-import           Lens.Micro         (ix, to, (^?), (^.))
+import           Lens.Micro
 import           Lens.Micro.Mtl     (use)
 import           Lib.Utils
 import           Lib.XMonad.Classes
@@ -57,6 +58,26 @@ withCurrentScreen action = do
     xviewS originalScreenId
     pure r
 
+-- |Set focus to a given @ScreenId@.
+-- |Do nothing when there is no such screen.
+xviewS :: ScreenId -> X ()
+xviewS i = windows $ xviewS' i
+
+-- |Set focus to a given @ScreenId@.
+-- |Do nothing when there is no such screen.
+-- |Requires update with the @windows@ function.
+xviewS' :: ScreenId -> WindowSet -> WindowSet
+xviewS' i windowSet = do
+    let maybeWorkspaceId = screenWorkspace' windowSet i
+    maybe windowSet (`W.view` windowSet) maybeWorkspaceId
+
+-- |A pure alternative of @screenWorkspace@.
+screenWorkspace' :: HasVisible env => env -> ScreenId -> Maybe WorkspaceId
+screenWorkspace' env screenId =
+    let visibleScreens = env ^. visibleL
+        maybeScreen = L.find (\s -> W.screen s == screenId) visibleScreens
+     in W.tag . W.workspace <$> maybeScreen
+
 {- |Obtain an initial workspace of the given screen id.
     Returns Nothing when there is no screen for sid.
 -}
@@ -98,13 +119,6 @@ stepElement :: Eq a => (Int -> Int) -> [a] -> a -> Maybe a
 stepElement updateIndex l e = do
     i <- L.elemIndex e l
     l ^? ix (updateIndex i)
-
--- |Set focus to a given @ScreenId@.
--- |Do nothing when there is no such screen.
-xviewS :: ScreenId -> X ()
-xviewS i = do
-    s <- screenWorkspace i
-    whenJust s $ windows . W.view
 
 {- |Correspondence between screenId and workspaceId.
     Screen ids must not be empty.
