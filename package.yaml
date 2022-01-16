@@ -32,6 +32,7 @@ dependencies:
 - xmonad-contrib >= 0.15
 - microlens
 - microlens-mtl
+- mtl
 
 library:
   source-dirs: lib
@@ -59,7 +60,6 @@ tests:
     - xmonad-config
     - hspec >= 2.7.0
     - containers
-    - mtl
 
   doctest:
     main:                Spec.hs

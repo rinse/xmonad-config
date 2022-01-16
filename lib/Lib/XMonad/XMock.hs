@@ -18,19 +18,19 @@ newtype XMockT st env m a = XMockT
     { unXMockT :: ReaderT env (StateT st m) a
     } deriving (Functor)
 
-runXMockT :: env -> st -> XMockT st env m a -> m (a, st)
-runXMockT env st m = runStateT (runReaderT (unXMockT m) env) st
+runXMockT :: st -> env -> XMockT st env m a -> m (a, st)
+runXMockT st env m = runStateT (runReaderT (unXMockT m) env) st
 
-execXMockT :: Functor m => env -> st -> XMockT st env m a -> m st
-execXMockT env st m = snd <$> runXMockT env st m
+execXMockT :: Functor m => st -> env -> XMockT st env m a -> m st
+execXMockT st env m = snd <$> runXMockT st env m
 
 type XMock st env = XMockT st env Identity
 
-runXMock :: env -> st -> XMock st env a -> (a, st)
-runXMock env st m = runIdentity $ runXMockT  env st m
+runXMock :: st -> env -> XMock st env a -> (a, st)
+runXMock st env m = runIdentity $ runXMockT st env m
 
-execXMock :: env -> st -> XMock st env a -> st
-execXMock env st m = snd $ runXMock env st m
+execXMock :: st -> env -> XMock st env a -> st
+execXMock st env m = snd $ runXMock st env m
 
 instance Monad m => Applicative (XMockT st env m) where
     pure = XMockT . pure
