@@ -4,6 +4,7 @@ module Lib.XMonad.Actions.XineramaWS
     ( initScreens
     , nextWS
     , prevWS
+    , withCurrentScreen'
     , xviewS'
     , initialWorkspaces    -- Only for testings
     , stepElement          -- Only for testings
@@ -15,7 +16,7 @@ module Lib.XMonad.Actions.XineramaWS
 import           Control.Monad
 import qualified Data.List          as L
 import           Lens.Micro
-import           Lens.Micro.Mtl     (use)
+import           Lens.Micro.Mtl     (use, (%=))
 import           Lib.Utils
 import           Lib.XMonad.Classes
 import           Lib.XMonad.Lenses
@@ -49,8 +50,8 @@ switchScreen f = withCurrentScreen $ do
         newWorkspace <- f screenId
         whenJust newWorkspace $ windows . W.greedyView
 
--- |Stores a current screen and runs a given @action@.
--- |Then restores the screen and returns the value from the @action@.
+-- |Switches all screens to a next workspace.
+-- |The next workspace is fetched by an input function.
 withCurrentScreen :: X a -> X a
 withCurrentScreen action = do
     originalScreenId <- use $ currentL . screenL
@@ -62,6 +63,16 @@ withCurrentScreen action = do
 -- |Do nothing when there is no such screen.
 xviewS :: ScreenId -> X ()
 xviewS i = windows $ xviewS' i
+
+-- |Stores a current screen and runs a given @action@.
+-- |Then restores the screen and returns the value from the @action@.
+-- |Requires update with the @windows@ function to apply the change.
+withCurrentScreen' :: (MonadState st m, HasWindowSet st, HasCurrent st) => m a -> m a
+withCurrentScreen' action = do
+    originalScreenId <- use $ currentL . screenL
+    r <- action
+    windowSetL %= xviewS' originalScreenId
+    pure r
 
 -- |Set focus to a given @ScreenId@.
 -- |Do nothing when there is no such screen.

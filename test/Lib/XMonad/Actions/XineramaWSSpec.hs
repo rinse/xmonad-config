@@ -3,8 +3,10 @@
 
 module Lib.XMonad.Actions.XineramaWSSpec (spec) where
 
+import           Control.Monad.State
 import qualified Data.Map                      as M
 import           Lens.Micro
+import           Lens.Micro.Mtl
 import           Lib.XMonad.Actions.XineramaWS
 import           Lib.XMonad.Classes
 import           Lib.XMonad.Lenses
@@ -144,6 +146,16 @@ spec = do
             let actual = xviewS' 4 windowSet
             (actual ^. currentL . screenL) `shouldBe` 1 -- A current screen id doesn't change
 
+    describe "withCurrentScreen" $ do
+        it "preserves a current screen and restore it after the action finishes" $ do
+            let windowSet = mockWindowSet
+                    (mockScreen 1 (mockWorkspace "1"))  -- current screen
+                    [ mockScreen 2 (mockWorkspace "2")  -- visible screens
+                    , mockScreen 3 (mockWorkspace "3")
+                    ] :: WindowSet
+            let actual = flip execState windowSet . withCurrentScreen' $ do
+                    windowSetL %= xviewS' 2
+            actual ^. currentL . screenL `shouldBe` 1
 
 newtype EnvMock = EnvMock
     { _workspaces :: [WorkspaceId]
