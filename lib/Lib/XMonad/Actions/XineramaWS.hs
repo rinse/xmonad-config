@@ -2,8 +2,14 @@
 
 module Lib.XMonad.Actions.XineramaWS
     ( initScreens
+    , initScreens'         -- Only for testings
     , nextWS
+    , nextWS'              -- Only for testings
     , prevWS
+    , prevWS'              -- Only for testings
+    , switchScreen         -- Only for testings
+    , withCurrentScreen    -- Only for testings
+    , xviewS               -- Only for testings
     , initialWorkspaces    -- Only for testings
     , stepElement          -- Only for testings
     , stepWorkspace        -- Only for testings
@@ -12,48 +18,91 @@ module Lib.XMonad.Actions.XineramaWS
     ) where
 
 import           Control.Monad
-import qualified Data.List          as L
-import           Lens.Micro         (ix, to, (^?), (^.))
-import           Lens.Micro.Mtl     (use)
+import           Control.Monad.State
+import qualified Data.List           as L
+import           Lens.Micro
+import           Lens.Micro.Mtl      (use, (%=))
 import           Lib.Utils
 import           Lib.XMonad.Classes
 import           Lib.XMonad.Lenses
 import           Lib.XMonad.Utils
+import           Lib.XMonad.XMock
 import           XMonad
-import qualified XMonad.StackSet    as W
+import qualified XMonad.StackSet     as W
 
 
-{- |Initializes screen-workspace correspondence.
-    (screen0, workspace0), (screen1, workspace1), ..
--}
+-- |Initializes screen-workspace correspondence.
+-- |(screen0, workspace0), (screen1, workspace1), ..
 initScreens :: X ()
-initScreens = switchScreen $ \screenId -> passEnvAndState initialWorkspaces ?? screenId
+initScreens = do
+    env <- ask
+    windows $ toUpdateFunction env initScreens'
+
+-- |A pure alternative of @initScreens@.
+initScreens' :: (MonadState st m, MonadReader env m, HasWindowSet st, HasCurrent st, HasVisible st, HasWorkspaces env)
+             => m ()
+initScreens' = switchScreen $ \screenId -> passEnvAndState initialWorkspaces ?? screenId
 
 -- |Go to the next workspace.
 nextWS :: X ()
-nextWS = switchScreen $ \screenId -> passEnvAndState nextWorkspace ?? screenId
+nextWS = do
+    env <- ask
+    windows $ toUpdateFunction env nextWS'
+
+-- |A pure alternative of @nextWS@.
+nextWS' :: (MonadState st m, MonadReader env m, HasWindowSet st, HasCurrent st, HasVisible st, HasWorkspaces env) => m ()
+nextWS' = switchScreen $ \screenId -> passEnvAndState nextWorkspace ?? screenId
 
 -- |Go to the previous workspace.
 prevWS :: X ()
-prevWS = switchScreen $ \screenId -> passEnvAndState prevWorkspace ?? screenId
+prevWS = do
+    env <- ask
+    windows $ toUpdateFunction env prevWS'
 
-{- |Switches screen to the workspace.
-    Does nothing when the workspace not found.
--}
-switchScreen :: (ScreenId -> X (Maybe WorkspaceId)) -> X ()
-switchScreen f =
-    withCurrentScreen $ do
-        ss <- use $ to screenIds
-        forM_ ss $ \s -> do
-            xviewS s -- switch screens temporarily
-            newW <- f s
-            whenJust newW $ windows . W.greedyView
-    where
-    withCurrentScreen action = do
-        csid <- use $ currentL . screenL
-        r <- action
-        xviewS csid
-        return r
+-- |A pure alternative of @prevWS@.
+prevWS' :: (MonadState st m, MonadReader env m, HasWindowSet st, HasCurrent st, HasVisible st, HasWorkspaces env) => m ()
+prevWS' = switchScreen $ \screenId -> passEnvAndState prevWorkspace ?? screenId
+
+-- |Make a monadic action into a pure update function.
+toUpdateFunction :: env -> XMock WindowSet env () -> WindowSet -> WindowSet
+toUpdateFunction env m st = execXMock st env m
+
+-- |Switches all screens to a next workspace.
+-- |The next workspace is fetched by an input function.
+-- |When the function returns @Nothing@, does nothing to the screen.
+switchScreen :: (MonadState st m, HasWindowSet st, HasCurrent st, HasVisible st)
+             => (ScreenId -> m (Maybe WorkspaceId)) -> m ()
+switchScreen f = withCurrentScreen $ do
+    sids <- use $ to screenIds
+    forM_ sids $ \screenId -> do       -- switch each workspace on a screen to a workspace given by f
+        windowSetL %= xviewS screenId -- switch screens temporarily
+        maybeWorkspaceId <- f screenId
+        whenJust maybeWorkspaceId $ \i ->
+            windowSetL %= W.greedyView i
+
+-- |Stores a current screen and runs a given @action@.
+-- |Then restores the screen and returns the value from the @action@.
+-- |Requires update with the @windows@ function to apply the change.
+withCurrentScreen :: (MonadState st m, HasWindowSet st, HasCurrent st) => m a -> m a
+withCurrentScreen action = do
+    originalScreenId <- use $ currentL . screenL
+    r <- action
+    windowSetL %= xviewS originalScreenId
+    pure r
+
+-- |Set focus to a given @ScreenId@.
+-- |Do nothing when there is no such screen.
+xviewS :: ScreenId -> WindowSet -> WindowSet
+xviewS i windowSet = do
+    let maybeWorkspaceId = screenWorkspace' windowSet i
+    maybe windowSet (`W.view` windowSet) maybeWorkspaceId
+
+-- |A pure alternative of @screenWorkspace@.
+screenWorkspace' :: HasVisible env => env -> ScreenId -> Maybe WorkspaceId
+screenWorkspace' env screenId =
+    let visibleScreens = env ^. visibleL
+        maybeScreen = L.find (\s -> W.screen s == screenId) visibleScreens
+     in W.tag . W.workspace <$> maybeScreen
 
 {- |Obtain an initial workspace of the given screen id.
     Returns Nothing when there is no screen for sid.
@@ -96,12 +145,6 @@ stepElement :: Eq a => (Int -> Int) -> [a] -> a -> Maybe a
 stepElement updateIndex l e = do
     i <- L.elemIndex e l
     l ^? ix (updateIndex i)
-
--- |Switches screens
-xviewS :: ScreenId -> X ()
-xviewS i = do
-    s <- screenWorkspace i
-    whenJust s $ windows . W.view
 
 {- |Correspondence between screenId and workspaceId.
     Screen ids must not be empty.

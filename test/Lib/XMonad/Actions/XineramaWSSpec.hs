@@ -1,12 +1,21 @@
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+
 module Lib.XMonad.Actions.XineramaWSSpec (spec) where
 
+import           Control.Monad.State
+import qualified Data.Map                      as M
 import           Lens.Micro
+import           Lens.Micro.Mtl
 import           Lib.XMonad.Actions.XineramaWS
 import           Lib.XMonad.Classes
+import           Lib.XMonad.Lenses
 import           Lib.XMonad.ScreensMock
+import           Lib.XMonad.XMock
 import           Test.Hspec
 import           Test.Hspec.QuickCheck
 import           XMonad
+import qualified XMonad.StackSet               as W
 
 spec :: Spec
 spec = do
@@ -111,9 +120,184 @@ spec = do
                             }
             initialWorkspaces envMock stMock 1 `shouldBe` Just "5"
 
+    describe "xviewS" $ do
+        context "it switches focus to a visible screen i" $ do
+            it "switches a current screen to i" $ do
+                let windowSet = mockWindowSet
+                        (mockScreen 1 (mockWorkspace "1"))  -- current screen
+                        [ mockScreen 2 (mockWorkspace "2")  -- visible screens
+                        , mockScreen 3 (mockWorkspace "3")
+                        ]
+                        []
+                let actual = xviewS 2 windowSet
+                (actual ^. currentL . to W.screen) `shouldBe` 2
+            it "sends the current screen to visible screens" $ do
+                let windowSet = mockWindowSet
+                        (mockScreen 1 (mockWorkspace "1"))  -- current screen
+                        [ mockScreen 2 (mockWorkspace "2")  -- visible screens
+                        , mockScreen 3 (mockWorkspace "3")
+                        ]
+                        []
+                let actual = xviewS 2 windowSet
+                (actual ^. visibleL . to (fmap W.screen)) `shouldBe` [1, 3]
+        it "does nothing when i is an invalid screen id" $ do
+            let windowSet = mockWindowSet
+                    (mockScreen 1 (mockWorkspace "1"))  -- current screen
+                    [ mockScreen 2 (mockWorkspace "2")  -- visible screens
+                    , mockScreen 3 (mockWorkspace "3")
+                    ]
+                    []
+            let actual = xviewS 4 windowSet
+            (actual ^. currentL . screenL) `shouldBe` 1 -- A current screen id doesn't change
+
+    describe "withCurrentScreen" $ do
+        it "preserves a current screen and restore it after the action finishes" $ do
+            let windowSet = mockWindowSet
+                    (mockScreen 1 (mockWorkspace "1"))  -- current screen
+                    [ mockScreen 2 (mockWorkspace "2")  -- visible screens
+                    , mockScreen 3 (mockWorkspace "3")
+                    ]
+                    []
+                    :: WindowSet
+            let actual = flip execState windowSet . withCurrentScreen $ do
+                    windowSetL %= xviewS 2
+            actual ^. currentL . screenL `shouldBe` 1
+
+    describe "switchScreen" $ do
+        let windowSet = mockWindowSet
+                (mockScreen 1 (mockWorkspace "1"))  -- current screen
+                [ mockScreen 2 (mockWorkspace "2")  -- visible screens
+                , mockScreen 3 (mockWorkspace "3")
+                ]
+                [ mockWorkspace "4", mockWorkspace "5"  -- hidden workspaces
+                , mockWorkspace "6"
+                ]
+                :: WindowSet
+            switcher sid
+                | sid == 1  = pure "4"
+                | sid == 2  = pure "5"
+                | sid == 3  = pure "6"
+                | otherwise = Nothing
+        context "switches a workspace on a specific screen to a specific workspace" $ do
+            it "switches a workspace on the current scrren to the next one" $ do
+                let actual = flip execState windowSet $
+                        switchScreen $ pure . switcher
+                actual ^. currentL . workspaceL . tagL` shouldBe` "4"
+            it "switches all visible workspaces to the next one" $ do
+                let actual = flip execState windowSet $
+                        switchScreen $ pure . switcher
+                actual ^. visibleL . to (fmap screenWorkspaceMap) `shouldBe` [(3, "6"), (2, "5")]
+        it "doesn't change the current screen itself" $ do
+            let actual = flip execState windowSet $
+                    switchScreen $ pure . switcher
+            actual ^. currentL . screenL `shouldBe` 1
+
+    describe "nextWS" $ do
+        let envMock = EnvMock { _workspaces = ["1", "2", "3", "4", "5", "6"] }
+            windowSet = mockWindowSet
+                (mockScreen 1 (mockWorkspace "1"))  -- current screen
+                [ mockScreen 2 (mockWorkspace "2")  -- visible screens
+                , mockScreen 3 (mockWorkspace "3")
+                ]
+                [ mockWorkspace "4", mockWorkspace "5", mockWorkspace "6"]  -- hidden workspaces
+                :: WindowSet
+        context "it leads all workspaces on visible screens to next" $ do
+            it "switches a current screen to the next one" $ do
+                let actual = execXMock windowSet envMock nextWS' ^. currentL . workspaceL . tagL
+                actual `shouldBe` "4"
+            it "switches all visible screens to the next one" $ do
+                let actual = execXMock windowSet envMock nextWS' ^. visibleL . to (fmap screenWorkspaceMap)
+                actual `shouldBe` [(3, "6"), (2, "5")]
+        it "doesn't change the current screen itself" $ do
+            let actual = execXMock windowSet envMock nextWS' ^. currentL . screenL
+            actual `shouldBe` 1
+
+    describe "prevWS" $ do
+        let envMock = EnvMock { _workspaces = ["1", "2", "3", "4", "5", "6"] }
+            windowSet = mockWindowSet
+                (mockScreen 1 (mockWorkspace "4"))  -- current screen
+                [ mockScreen 2 (mockWorkspace "5")  -- visible screens
+                , mockScreen 3 (mockWorkspace "6")
+                ]
+                [ mockWorkspace "1", mockWorkspace "2", mockWorkspace "3"]  -- hidden workspaces
+                :: WindowSet
+        context "it leads all workspaces on visible screens to next" $ do
+            it "switches a current screen to the next one" $ do
+                let actual = execXMock windowSet envMock prevWS' ^. currentL . workspaceL . tagL
+                actual `shouldBe` "1"
+            it "switches all visible screens to the next one" $ do
+                let actual = execXMock windowSet envMock prevWS' ^. visibleL . to (fmap screenWorkspaceMap)
+                actual `shouldBe` [(3, "3"), (2, "2")]
+        it "doesn't change the current screen itself" $ do
+            let actual = execXMock windowSet envMock prevWS' ^. currentL . screenL
+            actual `shouldBe` 1
+
+    describe "initScreens" $ do
+        let envMock = EnvMock { _workspaces = ["1", "2", "3", "4", "5", "6"] }
+            windowSet = mockWindowSet
+                (mockScreen 1 (mockWorkspace "4"))  -- current screen
+                [ mockScreen 2 (mockWorkspace "5")  -- visible screens
+                , mockScreen 3 (mockWorkspace "6")
+                ]
+                [ mockWorkspace "1", mockWorkspace "2", mockWorkspace "3"]  -- hidden workspaces
+                :: WindowSet
+        context "switches all workspaces on each screen to the initial one" $ do
+            it "will do with a current screen" $ do
+                let actual = execXMock windowSet envMock initScreens' ^. currentL . workspaceL . tagL
+                actual `shouldBe` "1"
+            it "will do with all visible screens" $ do
+                let actual = execXMock windowSet envMock initScreens' ^. visibleL . to (fmap screenWorkspaceMap)
+                actual `shouldBe` [(3, "3"), (2, "2")]
+
 newtype EnvMock = EnvMock
     { _workspaces :: [WorkspaceId]
     }
 
 instance HasWorkspaces EnvMock where
     workspacesL = lens _workspaces $ \x y -> x { _workspaces = y }
+
+mockLayout :: Layout Window
+mockLayout = Layout Full
+
+newtype MockLayout a = MockLayout ()
+    deriving (Eq, Read, Show)
+
+instance LayoutClass MockLayout a
+
+mockWorkspace :: i -> W.Workspace i (Layout Window) a
+mockWorkspace tag = W.Workspace
+    { W.tag = tag
+    , W.layout = mockLayout
+    , W.stack = Nothing
+    }
+
+mockScreenDetail :: ScreenDetail
+mockScreenDetail = SD
+    { screenRect = Rectangle
+        { rect_x = 0
+        , rect_y = 0
+        , rect_width = 0
+        , rect_height = 0
+        }
+    }
+
+mockScreen :: ScreenId -> W.Workspace i (Layout Window) a -> W.Screen i (Layout Window) a ScreenId ScreenDetail
+mockScreen sid workspace = W.Screen
+    { W.workspace = workspace
+    , W.screen = sid
+    , W.screenDetail = mockScreenDetail
+    }
+
+mockWindowSet :: W.Screen i (Layout Window) a ScreenId ScreenDetail
+              -> [W.Screen i (Layout Window) a ScreenId ScreenDetail]
+              -> [W.Workspace i (Layout Window) a]
+              -> W.StackSet i (Layout Window) a ScreenId ScreenDetail
+mockWindowSet current visible hidden = W.StackSet
+    { W.current = current
+    , W.visible = visible
+    , W.hidden = hidden
+    , W.floating = M.empty
+    }
+
+screenWorkspaceMap :: W.Screen i l a sid sd -> (sid, i)
+screenWorkspaceMap s = (W.screen s, W.tag . W.workspace $ s)
