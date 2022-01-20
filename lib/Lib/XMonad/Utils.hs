@@ -8,6 +8,7 @@ module Lib.XMonad.Utils
     ( xstate
     , sortedScreenIds
     , screenIds
+    , screens
     , passEnvAndState
     , (??)
     ) where
@@ -26,9 +27,13 @@ xstate = get
 sortedScreenIds :: (HasCurrent st, HasVisible st) => st -> [ScreenId]
 sortedScreenIds st = L.sort $ screenIds st
 
--- |Takes all screens from an environment.
+-- |Takes ids of all screens from an environment.
 screenIds :: (HasCurrent st, HasVisible st) => st -> [ScreenId]
-screenIds st = fmap W.screen $ view currentL st : view visibleL st
+screenIds = fmap W.screen . screens
+
+-- |Takes all screens from an environment.
+screens :: (HasCurrent st, HasVisible st) => st -> [W.Screen WorkspaceId (Layout Window) Window ScreenId ScreenDetail]
+screens st = view currentL st : view visibleL st
 
 -- |Passes a current environment and state to a function.
 -- |It doesn't change the current state.

@@ -121,14 +121,15 @@ nextWorkspace env st = stepWorkspace env st (+ 1)
 prevWorkspace :: (HasCurrent st, HasVisible st, HasWorkspaces env) => env -> st -> ScreenId -> Maybe WorkspaceId
 prevWorkspace env st = stepWorkspace env st (subtract 1)
 
--- |Steps workspaces of the current screen.
+-- |Steps workspaces of a screenId.
 -- |The update function gets and returns an index of the workspace.
 stepWorkspace :: (HasCurrent st, HasVisible st, HasWorkspaces env)
               => env -> st -> (Int -> Int) -> ScreenId -> Maybe WorkspaceId
 stepWorkspace env st updateIndex screenId = do
+    screen <- L.find (\s -> W.screen s == screenId) (screens st)
+    let workspaceTag = screen ^. workspaceL. tagL
     wids <- workspaceIdsOfScreen env st screenId
-    let currentWorkspaceTag = st ^. currentL . workspaceL . tagL
-    stepElement updateIndex wids currentWorkspaceTag
+    stepElement updateIndex wids workspaceTag
 
 -- |Returns `[WorkspaceId]` of a given screen.
 -- |Returns `Nothing` when the given screen does not exist.

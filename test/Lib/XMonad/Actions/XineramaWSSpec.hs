@@ -104,9 +104,15 @@ spec = do
                             { _current = mkMockScreen 1 "4"
                             , _visible = [mkMockScreen 2 "5", mkMockScreen 3 "6"]
                             }
-            it "steps workspaces"  $ do
+            it "steps workspaces of the screen 1"  $ do
                 let actual = stepWorkspace envMock stMock (+ 1) 1
                 actual `shouldBe` Just "7"
+            it "steps workspaces of the screen 2"  $ do
+                let actual = stepWorkspace envMock stMock (+ 1) 2
+                actual `shouldBe` Just "8"
+            it "steps workspaces of the screen 3"  $ do
+                let actual = stepWorkspace envMock stMock (+ 1) 3
+                actual `shouldBe` Just "9"
             it "steps backwards workspaces"  $ do
                 let actual = stepWorkspace envMock stMock (subtract 1) 1
                 actual `shouldBe` Just "1"
