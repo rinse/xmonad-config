@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 module Lib.XMonad.ScreensMock
     ( ScreensMock (..)
     , mkMockScreen
@@ -6,20 +8,20 @@ module Lib.XMonad.ScreensMock
 import           Lens.Micro
 import           Lib.XMonad.Classes
 import           XMonad
-import qualified XMonad.Core       as W
-import qualified XMonad.StackSet   as W
+import qualified XMonad.Core        as W
+import qualified XMonad.StackSet    as W
 
 type WScreen = W.Screen WorkspaceId (Layout Window) Window ScreenId ScreenDetail
 
-data ScreensMock = ScreensMock
-    { _current :: WScreen
-    , _visible :: [WScreen]
+data ScreensMock i l a sid sd = ScreensMock
+    { _current :: W.Screen i l a sid sd
+    , _visible :: [W.Screen i l a sid sd]
     }
 
-instance HasCurrent ScreensMock where
+instance HasCurrent (ScreensMock i l a sid sd) (W.Screen i l a sid sd) where
     currentL = lens _current $ \x y -> x { _current = y }
 
-instance HasVisible ScreensMock where
+instance HasVisible (ScreensMock i l a sid sd) [W.Screen i l a sid sd] where
     visibleL = lens _visible $ \x y -> x { _visible = y }
 
 mkMockScreen :: ScreenId -> W.WorkspaceId -> WScreen

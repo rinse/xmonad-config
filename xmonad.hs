@@ -17,7 +17,8 @@ import           Data.Functor                  ((<&>))
 import           Data.Ratio                    ((%))
 import           Lib.XMonad.Actions            (decVolume, incVolume, lock,
                                                 toggleMute, volumeControl)
-import           Lib.XMonad.Actions.XineramaWS (initScreens, nextWS, prevWS)
+import           Lib.XMonad.Actions.XineramaWS (initScreens, nextWS, prevWS,
+                                                shiftAndMoveToNextWS, shiftAndMoveToPrevWS)
 import           XMonad
 import           XMonad.Actions.CycleWS        (nextScreen, shiftNextScreen)
 import           XMonad.Actions.Minimize       (maximizeWindow, minimizeWindow,
@@ -81,6 +82,8 @@ configKeys c = c `additionalKeysP` myAdditionalKeys `removeKeysP` myRemovedKeys
         , ("M-i", windows W.swapMaster)
         , ("M1-C-l", nextWS)
         , ("M1-C-h", prevWS)
+        , ("M1-S-C-l", shiftAndMoveToNextWS)
+        , ("M1-S-C-h", shiftAndMoveToPrevWS)
         , ("M-m", withFocused minimizeWindow)
         , ("M-S-m", withLastMinimized maximizeWindow)
         , ("M-u a", incVolume)

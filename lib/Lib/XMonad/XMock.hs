@@ -54,5 +54,5 @@ newtype WorkspaceIds = WorkspaceIds
     { unWorkspaceIds :: [X.WorkspaceId]
     } deriving (Show, Read, Eq, Ord)
 
-instance HasWorkspaces WorkspaceIds where
+instance HasWorkspaces WorkspaceIds X.WorkspaceId where
     workspacesL = lens unWorkspaceIds $ \x y -> x { unWorkspaceIds = y }

@@ -1,9 +1,10 @@
-{-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE FunctionalDependencies #-}
 module Lib.XMonad.Classes
     ( HasConfig (..)
     , HasWorkspaces (..)
-    , HasWindowSet (..)
+    , HasStackSet (..)
     , HasCurrent (..)
     , HasVisible (..)
     , HasHidden (..)
@@ -16,57 +17,55 @@ import qualified XMonad.StackSet as W
 idLens :: Lens' a a
 idLens = lens id $ \_ y -> y
 
-class HasConfig s where
-    configL :: Lens' s (XConfig Layout)
+class HasConfig s a | s -> a where
+    configL :: Lens' s a
 
-class HasWorkspaces s where
-    workspacesL :: Lens' s [WorkspaceId]
+class HasWorkspaces s i | s -> i where
+    workspacesL :: Lens' s [i]
 
-class HasWindowSet s where
-    windowSetL :: Lens' s WindowSet
+class HasStackSet s a | s -> a where
+    stackSetL :: Lens' s a
 
-instance HasWindowSet WindowSet where
-    windowSetL = idLens
+instance HasStackSet (W.StackSet i l a sid sd) (W.StackSet i l a sid sd) where
+    stackSetL = idLens
+
+class HasCurrent s a | s -> a where
+    currentL :: Lens' s a
+
+class HasVisible s a | s -> a where
+    visibleL :: Lens' s a
+
+class HasHidden s a | s -> a where
+    hiddenL :: Lens' s a
+
+instance HasConfig XConf (XConfig Layout) where
+    configL = lens config $ \x y -> x { config = y }
+
+instance HasWorkspaces (XConfig l) WorkspaceId where
+    workspacesL = lens workspaces $ \x y -> x { workspaces = y }
+
+instance HasWorkspaces XConf WorkspaceId where
+    workspacesL = configL . workspacesL
+
+instance HasStackSet XState WindowSet where
+    stackSetL = lens windowset $ \x y -> x { windowset = y }
+
+instance HasCurrent (W.StackSet i l a sid sd) (W.Screen i l a sid sd) where
+    currentL = lens W.current $ \x y -> x { W.current = y }
 
 type WScreen = W.Screen WorkspaceId (Layout Window) Window ScreenId ScreenDetail
 
-class HasCurrent s where
-    currentL :: Lens' s WScreen
+instance HasCurrent XState WScreen where
+    currentL = stackSetL . currentL
 
-class HasVisible s where
-    visibleL :: Lens' s [WScreen]
-
-type WWorkspace = W.Workspace WorkspaceId (Layout Window) Window
-
-class HasHidden s where
-    hiddenL :: Lens' s [WWorkspace]
-
-instance HasConfig XConf where
-    configL = lens config $ \x y -> x { config = y }
-
-instance HasWorkspaces (XConfig l) where
-    workspacesL = lens workspaces $ \x y -> x { workspaces = y }
-
-instance HasWorkspaces XConf where
-    workspacesL = configL . workspacesL
-
-instance HasWindowSet XState where
-    windowSetL = lens windowset $ \x y -> x { windowset = y }
-
-instance HasCurrent WindowSet where
-    currentL = lens W.current $ \x y -> x { W.current = y }
-
-instance HasCurrent XState where
-    currentL = windowSetL . currentL
-
-instance HasVisible WindowSet where
+instance HasVisible (W.StackSet i l a sid sd) [W.Screen i l a sid sd] where
     visibleL = lens W.visible $ \x y -> x { W.visible = y }
 
-instance HasVisible XState where
-    visibleL = windowSetL . visibleL
+instance HasVisible XState [WScreen] where
+    visibleL = stackSetL . visibleL
 
-instance HasHidden WindowSet where
+instance HasHidden (W.StackSet i l a sid sd) [W.Workspace i l a] where
     hiddenL = lens W.hidden $ \x y -> x { W.hidden = y }
 
-instance HasHidden XState where
-    hiddenL = windowSetL . hiddenL
+instance HasHidden XState [W.Workspace WorkspaceId (Layout Window) Window] where
+    hiddenL = stackSetL . hiddenL
