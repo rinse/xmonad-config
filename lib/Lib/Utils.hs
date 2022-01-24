@@ -2,10 +2,12 @@ module Lib.Utils
     ( headMaybe
     , groupSort
     , groupWithKeyBy
+    , state'
     ) where
 
-import           Data.List
-import           Data.Maybe (listToMaybe)
+import           Control.Monad.State
+import qualified Data.List           as L
+import           Data.Maybe          (listToMaybe)
 
 {- $setup
     >>> import Lens.Micro
@@ -28,7 +30,7 @@ headMaybe = listToMaybe
     [(0,["a","d"]),(1,["b","c"])]
 -}
 groupSort :: Ord k => [(k, v)] -> [(k, [v])]
-groupSort = groupWithKeyBy (==) . sortOn fst
+groupSort = groupWithKeyBy (==) . L.sortOn fst
 
 {- |Similar to 'groupBy' but with a key.
 
@@ -47,3 +49,9 @@ groupWithKeyBy p ((fx, sx):xs) =
      in (fx, sx : (snd <$> ys)) : groupWithKeyBy p zs
     where
     p' x y = p x $ fst y
+
+-- |A simpler variant of state
+-- |Makes update function to a state monad.
+-- |`execState` will do the inverse operation for `State`.
+state' :: MonadState s m => (s -> s) -> m ()
+state' f = state $ \s -> ((), f s)
