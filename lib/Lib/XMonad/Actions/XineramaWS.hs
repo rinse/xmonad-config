@@ -31,64 +31,54 @@ import           Lib.Utils
 import           Lib.XMonad.Classes
 import           Lib.XMonad.Lenses
 import           Lib.XMonad.Utils
-import           Lib.XMonad.XMock
 import           XMonad
 import qualified XMonad.StackSet     as W
-
 
 -- |Initializes screen-workspace correspondence.
 -- |(screen0, workspace0), (screen1, workspace1), ..
 initScreens :: X ()
-initScreens = do
-    env <- ask
-    windows $ toUpdateFunction env initScreens'
+initScreens = ask >>= windows . initScreens'
 
 -- |A pure alternative of @initScreens@.
-initScreens' :: ( MonadState st m
-                , MonadReader env m
-                , HasStackSet st (W.StackSet i l a sid sd)
+initScreens' :: ( HasStackSet st (W.StackSet i l a sid sd)
                 , HasCurrent st (W.Screen i l a sid sd)
                 , HasVisible st [W.Screen i l a sid sd]
                 , HasWorkspaces env i
                 , Eq i, Ord sid
-                ) => m ()
-initScreens' = switchScreen $ \screenId -> passEnvAndState initialWorkspaces ?? screenId
+                ) => env -> st -> st
+initScreens' env = execState $
+    switchScreen $ \sid ->
+        gets $ initialWorkspaces sid env
 
 -- |Go to the next workspace.
 nextWS :: X ()
-nextWS = do
-    env <- ask
-    windows $ toUpdateFunction env nextWS'
+nextWS = ask >>= windows . nextWS'
 
 -- |A pure alternative of @nextWS@.
-nextWS' :: ( MonadState st m, MonadReader env m
-           , HasStackSet st (W.StackSet i l a sid sd)
+nextWS' :: ( HasStackSet st (W.StackSet i l a sid sd)
            , HasCurrent st (W.Screen i l a sid sd)
            , HasVisible st [W.Screen i l a sid sd]
            , HasWorkspaces env i
            , Eq i, Ord sid
-           ) => m ()
-nextWS' = switchScreen $ \screenId -> passEnvAndState nextWorkspace ?? screenId
+           ) => env -> st -> st
+nextWS' env = execState $
+    switchScreen $ \sid ->
+        gets $ nextWorkspace sid env
 
 -- |Go to the previous workspace.
 prevWS :: X ()
-prevWS = do
-    env <- ask
-    windows $ toUpdateFunction env prevWS'
+prevWS = ask >>= windows . prevWS'
 
 -- |A pure alternative of @prevWS@.
-prevWS' :: ( MonadState st m, MonadReader env m
-           , HasStackSet st (W.StackSet i l a sid sd)
+prevWS' :: ( HasStackSet st (W.StackSet i l a sid sd)
            , HasCurrent st (W.Screen i l a sid sd)
            , HasVisible st [W.Screen i l a sid sd]
            , HasWorkspaces env i
            , Eq i, Ord sid
-           ) => m ()
-prevWS' = switchScreen $ \screenId -> passEnvAndState prevWorkspace ?? screenId
-
--- |Make a monadic action into a pure update function.
-toUpdateFunction :: env -> XMock WindowSet env () -> WindowSet -> WindowSet
-toUpdateFunction env m st = execXMock st env m
+           ) => env -> st -> st
+prevWS' env = execState $
+    switchScreen $ \sid ->
+        gets $ prevWorkspace sid env
 
 -- |Shift the currently focused window to a next workspace and move to the workspace.
 shiftAndMoveToNextWS :: X ()
@@ -102,9 +92,7 @@ shiftAndMoveToNextWS' :: ( HasStackSet st (W.StackSet i l a sid sd)
                          , HasWorkspaces env i
                          , Eq i, Eq a, Ord sid
                          ) => env -> st -> st
-shiftAndMoveToNextWS' env st = nextWS'' $ shiftToNextWS' env st
-    where
-    nextWS'' s = execXMock s env nextWS'
+shiftAndMoveToNextWS' env st = nextWS' env $ shiftToNextWS' env st
 
 -- |Shift the currently focused window to a next workspace.
 shiftToNextWS' :: ( HasCurrent st (W.Screen i l a sid sd)
@@ -115,7 +103,7 @@ shiftToNextWS' :: ( HasCurrent st (W.Screen i l a sid sd)
                   ) => env -> st -> st
 shiftToNextWS' env st =
     let currentScreen = st ^. currentL . screenL
-        maybeDestinationTag = nextWorkspace env st currentScreen
+        maybeDestinationTag = nextWorkspace currentScreen env st
      in maybe st (`shiftToWorkspace` st) maybeDestinationTag
 
 -- |Shift the currently focused window to a previous workspace and move to the workspace.
@@ -130,9 +118,7 @@ shiftAndMoveToPrevWS' :: ( HasStackSet st (W.StackSet i l a sid sd)
                          , HasWorkspaces env i
                          , Eq i, Eq a, Ord sid
                          ) => env -> st -> st
-shiftAndMoveToPrevWS' env st = prevWS'' $ shiftToPrevWS' env st
-    where
-    prevWS'' s = execXMock s env prevWS'
+shiftAndMoveToPrevWS' env st = prevWS' env $ shiftToPrevWS' env st
 
 -- |Shift the currently focused window to a previous workspace.
 shiftToPrevWS' :: ( HasCurrent st (W.Screen i l a sid sd)
@@ -143,7 +129,7 @@ shiftToPrevWS' :: ( HasCurrent st (W.Screen i l a sid sd)
                   ) => env -> st -> st
 shiftToPrevWS' env st =
     let currentScreen = st ^. currentL . screenL
-        maybeDestinationTag = prevWorkspace env st currentScreen
+        maybeDestinationTag = prevWorkspace currentScreen env st
      in maybe st (`shiftToWorkspace` st) maybeDestinationTag
 
 -- |Shifts a current window to a destination workspace.
@@ -259,8 +245,8 @@ initialWorkspaces :: (HasCurrent st (W.Screen i l a sid sd)
                     , HasVisible st [W.Screen i l a sid sd]
                     , HasWorkspaces env i
                     , Ord sid
-                    ) => env -> st -> sid -> Maybe i
-initialWorkspaces env st sId = do
+                    ) => sid -> env -> st -> Maybe i
+initialWorkspaces sId env st = do
     let sIds = sortedScreenIds st
         wIds = env ^. workspacesL
     lookup sId (correspondence sIds wIds) >>= headMaybe
@@ -270,16 +256,16 @@ nextWorkspace :: ( HasCurrent st (W.Screen i l a sid sd)
                  , HasVisible st [W.Screen i l a sid sd]
                  , HasWorkspaces env i
                  , Eq i, Ord sid
-                 ) => env -> st -> sid -> Maybe i
-nextWorkspace env st = stepWorkspace env st (+ 1)
+                 ) => sid -> env -> st -> Maybe i
+nextWorkspace = stepWorkspace (+ 1)
 
 -- |The previous workspace of the current screen.
 prevWorkspace :: ( HasCurrent st (W.Screen i l a sid sd)
                  , HasVisible st [W.Screen i l a sid sd]
                  , HasWorkspaces env i
                  , Eq i, Ord sid
-                 ) => env -> st -> sid -> Maybe i
-prevWorkspace env st = stepWorkspace env st (subtract 1)
+                 ) => sid -> env -> st -> Maybe i
+prevWorkspace = stepWorkspace (subtract 1)
 
 -- |Steps workspaces of a screenId.
 -- |The update function gets and returns an index of the workspace.
@@ -287,11 +273,11 @@ stepWorkspace :: ( HasCurrent st (W.Screen i l a sid sd)
                  , HasVisible st [W.Screen i l a sid sd]
                  , HasWorkspaces env i
                  , Eq i, Ord sid
-                 ) => env -> st -> (Int -> Int) -> sid -> Maybe i
-stepWorkspace env st updateIndex screenId = do
+                 ) => (Int -> Int) -> sid -> env -> st -> Maybe i
+stepWorkspace updateIndex screenId env st = do
     screen <- L.find (\s -> W.screen s == screenId) (screens st)
     let workspaceTag = screen ^. workspaceL . tagL
-    wids <- workspaceIdsOfScreen env st screenId
+    wids <- workspaceIdsOfScreen screenId env st
     stepElement updateIndex wids workspaceTag
 
 -- |Returns `[WorkspaceId]` of a given screen.
@@ -300,21 +286,8 @@ workspaceIdsOfScreen :: ( HasCurrent st (W.Screen i l a sid sd)
                         , HasVisible st [W.Screen i l a sid sd]
                         , HasWorkspaces env i
                         , Ord sid
-                        ) => env -> st -> sid -> Maybe [i]
-workspaceIdsOfScreen env st screenId =
+                        ) => sid -> env -> st -> Maybe [i]
+workspaceIdsOfScreen screenId env st =
     let sids = sortedScreenIds st
         allWorkspaceIds = env ^. workspacesL
      in lookup screenId $ correspondence sids allWorkspaceIds
-
--- |Steps an element of a list with an update function.
--- |The update function gets and returns an index.
-stepElement :: Eq a => (Int -> Int) -> [a] -> a -> Maybe a
-stepElement updateIndex l e = do
-    i <- L.elemIndex e l
-    l ^? ix (updateIndex i)
-
-{- |Correspondence between screenId and workspaceId.
-    Screen ids must not be empty.
--}
-correspondence :: Ord a => [a] -> [b] -> [(a, [b])]
-correspondence a = groupSort . zip (cycle a)
