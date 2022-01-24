@@ -11,7 +11,6 @@ module Lib.XMonad.Utils
     , screenIds
     , screens
     , passEnvAndState
-    , (??)
     , uncons
     , allWorkspaces
     , findWorkspace
@@ -53,10 +52,6 @@ passEnvAndState :: (MonadState st m, MonadReader env m) => (env -> st -> a) -> m
 passEnvAndState f = do
     env <- ask
     f env <$> get
-
-infixl 1 ??
-(??) :: Functor f => f (a -> b) -> a -> f b
-f ?? a = fmap ($ a) f
 
 -- |Produces the first element of the stack, and a stack of the remaining elements, if any.
 -- |Try to move focus to the down, otherwise try to move focus to the up.

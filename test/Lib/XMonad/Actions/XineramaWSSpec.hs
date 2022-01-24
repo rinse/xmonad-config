@@ -12,7 +12,6 @@ import           Lib.XMonad.Classes
 import           Lib.XMonad.Lenses
 import           Lib.XMonad.ScreensMock
 import           Lib.XMonad.Utils
-import           Lib.XMonad.XMock
 import           Test.Hspec
 import           Test.Hspec.QuickCheck
 import           XMonad
@@ -63,7 +62,7 @@ spec = do
                             { _current = mkMockScreen 1 "1"
                             , _visible = [mkMockScreen 2 "2", mkMockScreen 3 "3"]
                             }
-            let wids = workspaceIdsOfScreen envMock stMock 2
+            let wids = workspaceIdsOfScreen 2 envMock stMock
             wids `shouldBe` Just ["2", "5", "8"]
         it "returns Nothing when there is no such screen" $ do
             let envMock = EnvMock { _workspaces = ["1", "2", "3", "4"] }
@@ -71,7 +70,7 @@ spec = do
                             { _current = mkMockScreen 1 "1"
                             , _visible = [mkMockScreen 2 "2", mkMockScreen 3 "3"]
                             }
-            let wids = workspaceIdsOfScreen envMock stMock 4
+            let wids = workspaceIdsOfScreen 4 envMock stMock
             wids `shouldBe` Nothing
         context "it may return different numbers of workspaces for each screen" $ do
             let envMock = EnvMock { _workspaces = ["1", "2", "3", "4"] }
@@ -80,10 +79,10 @@ spec = do
                             , _visible = [mkMockScreen 2 "2", mkMockScreen 3 "3"]
                             }
             it "returns two workspaces for screen 1" $ do
-                let wids = workspaceIdsOfScreen envMock stMock 1
+                let wids = workspaceIdsOfScreen 1 envMock stMock
                 wids `shouldBe` Just ["1", "4"]
             it "returns one workspaces for screen 2" $ do
-                let wids = workspaceIdsOfScreen envMock stMock 2
+                let wids = workspaceIdsOfScreen 2 envMock stMock
                 wids `shouldBe` Just ["2"]
 
     describe "stepWorkspace" $ do
@@ -94,10 +93,10 @@ spec = do
                             , _visible = [] -- There are no other screen.
                             }
             it "steps workspaces 1 by 1"  $ do
-                let actual = stepWorkspace envMock stMock (+ 1) 1
+                let actual = stepWorkspace (+ 1) 1 envMock stMock
                 actual `shouldBe` Just "2"
             it "returns Nothing when it gets a screen which does not exist"  $ do
-                let actual = stepWorkspace envMock stMock (+ 1) 2
+                let actual = stepWorkspace (+ 1) 2 envMock stMock
                 actual `shouldBe` Nothing
         context "there are three screens" $ do
             let envMock = EnvMock { _workspaces = ["1", "2", "3", "4", "5", "6", "7", "8", "9"] }
@@ -106,16 +105,16 @@ spec = do
                             , _visible = [mkMockScreen 2 "5", mkMockScreen 3 "6"]
                             }
             it "steps workspaces of the screen 1"  $ do
-                let actual = stepWorkspace envMock stMock (+ 1) 1
+                let actual = stepWorkspace (+ 1) 1 envMock stMock
                 actual `shouldBe` Just "7"
             it "steps workspaces of the screen 2"  $ do
-                let actual = stepWorkspace envMock stMock (+ 1) 2
+                let actual = stepWorkspace (+ 1) 2 envMock stMock
                 actual `shouldBe` Just "8"
             it "steps workspaces of the screen 3"  $ do
-                let actual = stepWorkspace envMock stMock (+ 1) 3
+                let actual = stepWorkspace (+ 1) 3 envMock stMock
                 actual `shouldBe` Just "9"
             it "steps backwards workspaces"  $ do
-                let actual = stepWorkspace envMock stMock (subtract 1) 1
+                let actual = stepWorkspace (subtract 1) 1 envMock stMock
                 actual `shouldBe` Just "1"
 
     describe "initialWorkspaces" $ do
@@ -125,7 +124,7 @@ spec = do
                             { _current = mkMockScreen 1 currentWorkspace
                             , _visible = [] -- There are no other screen.
                             }
-            initialWorkspaces envMock stMock 1 `shouldBe` Just "5"
+            initialWorkspaces 1 envMock stMock `shouldBe` Just "5"
 
     describe "xviewS" $ do
         context "it switches focus to a visible screen i" $ do
@@ -207,13 +206,13 @@ spec = do
                 [ mockWorkspace "4", mockWorkspace "5", mockWorkspace "6"]  -- hidden workspaces
         context "it leads all workspaces on visible screens to next" $ do
             it "switches a current screen to the next one" $ do
-                let actual = execXMock windowSet envMock nextWS' ^. currentL . workspaceL . tagL
+                let actual = nextWS' envMock windowSet ^. currentL . workspaceL . tagL
                 actual `shouldBe` "4"
             it "switches all visible screens to the next one" $ do
-                let actual = execXMock windowSet envMock nextWS' ^. visibleL . to (fmap screenWorkspaceMap)
+                let actual = nextWS' envMock windowSet ^. visibleL . to (fmap screenWorkspaceMap)
                 actual `shouldBe` [(3, "6"), (2, "5")]
         it "doesn't change the current screen itself" $ do
-            let actual = execXMock windowSet envMock nextWS' ^. currentL . screenL
+            let actual = nextWS' envMock windowSet ^. currentL . screenL
             actual `shouldBe` 1
 
     describe "prevWS" $ do
@@ -226,13 +225,13 @@ spec = do
                 [ mockWorkspace "1", mockWorkspace "2", mockWorkspace "3"]  -- hidden workspaces
         context "it leads all workspaces on visible screens to next" $ do
             it "switches a current screen to the next one" $ do
-                let actual = execXMock windowSet envMock prevWS' ^. currentL . workspaceL . tagL
+                let actual = prevWS' envMock windowSet ^. currentL . workspaceL . tagL
                 actual `shouldBe` "1"
             it "switches all visible screens to the next one" $ do
-                let actual = execXMock windowSet envMock prevWS' ^. visibleL . to (fmap screenWorkspaceMap)
+                let actual = prevWS' envMock windowSet ^. visibleL . to (fmap screenWorkspaceMap)
                 actual `shouldBe` [(3, "3"), (2, "2")]
         it "doesn't change the current screen itself" $ do
-            let actual = execXMock windowSet envMock prevWS' ^. currentL . screenL
+            let actual = prevWS' envMock windowSet ^. currentL . screenL
             actual `shouldBe` 1
 
     describe "initScreens" $ do
@@ -245,10 +244,10 @@ spec = do
                 [ mockWorkspace "1", mockWorkspace "2", mockWorkspace "3"]  -- hidden workspaces
         context "switches all workspaces on each screen to the initial one" $ do
             it "will do with a current screen" $ do
-                let actual = execXMock windowSet envMock initScreens' ^. currentL . workspaceL . tagL
+                let actual = initScreens' envMock windowSet ^. currentL . workspaceL . tagL
                 actual `shouldBe` "1"
             it "will do with all visible screens" $ do
-                let actual = execXMock windowSet envMock initScreens' ^. visibleL . to (fmap screenWorkspaceMap)
+                let actual = initScreens' envMock windowSet ^. visibleL . to (fmap screenWorkspaceMap)
                 actual `shouldBe` [(3, "3"), (2, "2")]
 
     describe "shiftToWorkspace" $ do
