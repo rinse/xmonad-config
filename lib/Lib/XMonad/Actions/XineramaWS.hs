@@ -25,6 +25,8 @@ import           Control.Monad
 import           Control.Monad.State
 import qualified Data.List           as L
 import           Data.Maybe
+import           Data.Foldable
+import           Data.Traversable
 import           Lens.Micro
 import           Lens.Micro.Mtl      (use, (%=), (.=))
 import           Lib.Utils
@@ -52,33 +54,33 @@ initScreens' env = execState $
 
 -- |Go to the next workspace.
 nextWS :: X ()
-nextWS = ask >>= windows . nextWS'
+nextWS = ask >>= (windows . execState) . nextWS'
 
 -- |A pure alternative of @nextWS@.
-nextWS' :: ( HasStackSet st (W.StackSet i l a sid sd)
+nextWS' :: ( MonadState st m
+           , HasStackSet st (W.StackSet i l a sid sd)
            , HasCurrent st (W.Screen i l a sid sd)
            , HasVisible st [W.Screen i l a sid sd]
            , HasWorkspaces env i
            , Eq i, Ord sid
-           ) => env -> st -> st
-nextWS' env = execState $
-    switchScreen $ \sid ->
-        gets $ nextWorkspace sid env
+           ) => env -> m Bool
+nextWS' env = switchScreen $ \sid ->
+    gets $ nextWorkspace sid env
 
 -- |Go to the previous workspace.
 prevWS :: X ()
-prevWS = ask >>= windows . prevWS'
+prevWS = ask >>= (windows . execState) . prevWS'
 
 -- |A pure alternative of @prevWS@.
-prevWS' :: ( HasStackSet st (W.StackSet i l a sid sd)
+prevWS' :: ( MonadState st m
+           , HasStackSet st (W.StackSet i l a sid sd)
            , HasCurrent st (W.Screen i l a sid sd)
            , HasVisible st [W.Screen i l a sid sd]
            , HasWorkspaces env i
            , Eq i, Ord sid
-           ) => env -> st -> st
-prevWS' env = execState $
-    switchScreen $ \sid ->
-        gets $ prevWorkspace sid env
+           ) => env -> m Bool
+prevWS' env = switchScreen $ \sid ->
+    gets $ prevWorkspace sid env
 
 -- |Shift the currently focused window to a next workspace and move to the workspace.
 shiftAndMoveToNextWS :: X ()
@@ -92,7 +94,13 @@ shiftAndMoveToNextWS' :: ( HasStackSet st (W.StackSet i l a sid sd)
                          , HasWorkspaces env i
                          , Eq i, Eq a, Ord sid
                          ) => env -> st -> st
-shiftAndMoveToNextWS' env st = nextWS' env $ shiftToNextWS' env st
+shiftAndMoveToNextWS' env st =
+    -- Try to nextWS', then do shiftToNextWS and nextWS'
+    if evalState (nextWS' env) st
+    then flip execState st $ do
+        state' $ shiftToNextWS' env
+        void $ nextWS' env
+    else st
 
 -- |Shift the currently focused window to a next workspace.
 shiftToNextWS' :: ( HasCurrent st (W.Screen i l a sid sd)
@@ -118,7 +126,13 @@ shiftAndMoveToPrevWS' :: ( HasStackSet st (W.StackSet i l a sid sd)
                          , HasWorkspaces env i
                          , Eq i, Eq a, Ord sid
                          ) => env -> st -> st
-shiftAndMoveToPrevWS' env st = prevWS' env $ shiftToPrevWS' env st
+shiftAndMoveToPrevWS' env st =
+    -- Try to prevWS', then do shiftToNextWS and nextWS'
+    if evalState (prevWS' env) st
+    then flip execState st $ do
+        state' $ shiftToPrevWS' env
+        void $ prevWS' env
+    else st
 
 -- |Shift the currently focused window to a previous workspace.
 shiftToPrevWS' :: ( HasCurrent st (W.Screen i l a sid sd)
@@ -191,22 +205,29 @@ insertUpIfNotElem :: Eq a => a -> W.Stack a -> W.Stack a
 insertUpIfNotElem a st = insertUpIf elemNotOnStack a st
     where elemNotOnStack b = not $ elemOnStack b st
 
--- |Switches all screens to a next workspace.
--- |The next workspace is fetched by an input function.
--- |When the function returns @Nothing@, does nothing to the screen.
+-- |Switches each screens to a workspace.
+-- |
+-- |The next workspace is given by a function.
+-- |None of screen switches when any of a screen doesn't have a next workspace.
+-- |Returns @True@ if the screens successfully switched, returns @False@ otherwise.
 switchScreen :: ( MonadState st m
                 , HasStackSet st (W.StackSet i l a sid sd)
                 , HasCurrent st (W.Screen i l a sid sd)
                 , HasVisible st [W.Screen i l a sid sd]
                 , Eq i, Eq sid
-                ) => (sid -> m (Maybe i)) -> m ()
+                ) => (sid -> m (Maybe i)) -> m Bool
 switchScreen f = withCurrentScreen $ do
     sids <- use $ to screenIds
-    forM_ sids $ \screenId -> do       -- switch each workspace on a screen to a workspace given by f
-        stackSetL %= xviewS screenId -- switch screens temporarily
+    listOfMaybe <- for sids $ \screenId -> do
         maybeWorkspaceId <- f screenId
-        whenJust maybeWorkspaceId $ \i ->
+        for maybeWorkspaceId $ \workspaceId ->
+            pure (screenId, workspaceId)
+    let maybeOfList = sequenceA listOfMaybe
+    ret <- for maybeOfList $ \list -> do
+        for_ list $ \(screenId, i) -> do
+            stackSetL %= xviewS screenId -- switch screens temporarily
             stackSetL %= W.greedyView i
+    pure $ isJust ret
 
 -- |Stores a current screen and runs a given @action@.
 -- |Then restores the screen and returns the value from the @action@.
