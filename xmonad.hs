@@ -103,7 +103,7 @@ myPrompt :: SearchEngine -> X ()
 myPrompt = promptSearchBrowser myPromptConfig myBrowser
 
 myBrowser :: Browser
-myBrowser = "chromium-browser"
+myBrowser = "x-www-browser"
 
 myPromptConfig :: P.XPConfig
 myPromptConfig = def
