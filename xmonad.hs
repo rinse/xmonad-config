@@ -60,7 +60,7 @@ main = xmobar myConfig >>= xmonad
         phi = 8 % 5
 
 myTerminal :: String
-myTerminal = "lxterminal"
+myTerminal = "x-terminal-emulator"
 
 myWorkspaces :: [WorkspaceId]
 myWorkspaces = [0..9] <&> (show :: Int -> String)
