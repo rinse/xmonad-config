@@ -32,8 +32,7 @@ import           XMonad.Layout.BoringWindows   (boringWindows, focusDown,
                                                 focusUp)
 import           XMonad.Layout.Minimize        (minimize)
 import           XMonad.Layout.NoBorders       (noBorders)
-import           XMonad.Layout.ResizableTile   (MirrorResize (MirrorExpand, MirrorShrink),
-                                                ResizableTall (ResizableTall))
+import           XMonad.Layout.ResizableTile   (ResizableTall (ResizableTall))
 import qualified XMonad.Prompt                 as P (XPConfig (..),
                                                      XPPosition (..))
 import qualified XMonad.Prompt.Shell           as P (shellPrompt)
@@ -55,7 +54,7 @@ main = xmobar myConfig >>= xmonad
         }
     myLayout = avoidStruts . boringWindows . minimize $ myTiles
         where
-        myTiles = myTile ||| Mirror myTile ||| noBorders Full
+        myTiles = myTile ||| noBorders Full
         myTile = ResizableTall 1 (3 % 100) (1 / phi) [1, 6 % 5]
         phi = 8 % 5
 
@@ -73,8 +72,6 @@ configKeys c = c `additionalKeysP` myAdditionalKeys `removeKeysP` myRemovedKeys
         [ ("M4-l", lock)
         , ("M1-C-t", safeSpawnProg myTerminal)
         , ("M-p", P.shellPrompt myPromptConfig)
-        , ("M-a", sendMessage MirrorShrink)
-        , ("M-z", sendMessage MirrorExpand)
         , ("M-j", focusDown)
         , ("M-k", focusUp)
         , ("M-r", nextScreen)
