@@ -1,15 +1,15 @@
 #!/usr/bin/env stack
--- stack --resolver lts-14.16 runghc --package xmonad --package directory --package process
+-- stack --resolver lts-19.6 runghc --package xmonad --package directory --package process
 
 import           System.Directory (copyFile, setCurrentDirectory)
 import           System.Info      (arch, os)
 import           System.Process   (callProcess)
-import           XMonad           (getXMonadDir)
+import           XMonad.Core      (cfgDir, getDirectories)
 
 
 main :: IO ()
 main = do
-    xmonadConfigDir <- getXMonadDir
+    xmonadConfigDir <- cfgDir <$> getDirectories
     setCurrentDirectory xmonadConfigDir
     callProcess "stack" [ "install", "--local-bin-path", xmonadConfigDir ]
     -- see XMonad.Main.buildLaunch

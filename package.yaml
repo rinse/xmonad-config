@@ -28,8 +28,8 @@ ghc-options:
 
 dependencies:
 - base >= 4.7 && < 5
-- xmonad >= 0.15
-- xmonad-contrib >= 0.15
+- xmonad >= 0.17
+- xmonad-contrib >= 0.17
 - microlens
 - microlens-mtl
 - mtl
