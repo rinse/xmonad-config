@@ -62,7 +62,7 @@ myTerminal :: String
 myTerminal = "x-terminal-emulator"
 
 myWorkspaces :: [WorkspaceId]
-myWorkspaces = [0..9] <&> (show :: Int -> String)
+myWorkspaces = [1..12] <&> (show :: Int -> String)
 
 configKeys :: XConfig l -> XConfig l
 configKeys c = c `additionalKeysP` myAdditionalKeys `removeKeysP` myRemovedKeys
