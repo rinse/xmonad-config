@@ -23,3 +23,7 @@ Icon=xmonad.png
 Type=Application
 EOF
 ```
+
+## Keybindings
+
+See [KEYBINDINGS.md](KEYBINDINGS.md) for the list of active keybindings (in Japanese).

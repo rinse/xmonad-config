@@ -89,6 +89,7 @@ configKeys c = c `additionalKeysP` myAdditionalKeys `removeKeysP` myRemovedKeys
         , ("M-u v", volumeControl)
         , ("M-u i", initScreens)
         , ("M-u h", myPrompt hoogle)
+        , ("M-u r", safeSpawnProg "xrefresh")
         ]
     myRemovedKeys :: [String]
     myRemovedKeys =
