@@ -17,10 +17,9 @@ $ git clone https://github.com/rinse/xmonad-config.git $HOME/.xmonad
 $ sudo cat << EOF > /usr/share/xsession/xmonad.desktop
 [Desktop Entry]
 Name=XMonad
-Comment=Log in using the xmonad window manager
-Exec=/usr/bin/xmonad
-TryExec=/usr/bin/xmonad
-Icon=xmonad
+Comment=Lightweight tiling window manager
+Exec=xmonad
+Icon=xmonad.png
 Type=Application
 EOF
 ```
